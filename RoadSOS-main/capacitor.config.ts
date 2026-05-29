@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.kshitij.roadsos',
   appName: 'RoadSOS',
   server: {
-    url: 'https://YOUR-VERCEL-URL.vercel.app',
+    url: 'https://road-sos-lastest-git-main-ayan-projects14.app',
     cleartext: false
   }
 };
