@@ -125,77 +125,14 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
 
   async function fetchServices(lat: number, lng: number) {
     try {
-      const query = `
-        [out:json];
-        (
-          node["amenity"="hospital"](around:10000,${lat},${lng});
-          node["amenity"="police"](around:10000,${lat},${lng});
-          node["amenity"="ambulance_station"](around:10000,${lat},${lng});
-          node["shop"="car_repair"](around:10000,${lat},${lng});
-        );
-        out body;
-      `;
-
-const response = await fetch(
-  "https://overpass-api.de/api/interpreter",
-  { method: "POST", body: query }
-);
+      const response = await fetch(`/api/services/scrape?lat=${lat}&lng=${lng}&radius=10000`);
 
       if (!response.ok) {
-        throw new Error("Overpass API failed");
+        throw new Error("Failed to fetch from scrape API");
       }
 
       const data = await response.json();
-
-      const services: ServiceData[] = data.elements.map(
-        (item: any, index: number) => {
-          let type: ServiceType = "repair";
-
-          if (item.tags?.amenity === "hospital") {
-            type = "hospital";
-          } else if (item.tags?.amenity === "police") {
-            type = "police";
-          } else if (item.tags?.amenity === "ambulance_station") {
-            type = "ambulance";
-          }
-
-          return {
-            _id: `osm-${index}`,
-
-            name:
-              item.tags?.name ||
-              item.tags?.amenity ||
-              item.tags?.shop ||
-              "Unknown Service",
-
-            type,
-
-            phone: item.tags?.phone
-              ? [item.tags.phone]
-              : ["Not Available"],
-
-            rating: 4.0,
-
-            distance: Math.round(
-              Math.sqrt(
-                Math.pow(item.lat - lat, 2) +
-                Math.pow(item.lon - lng, 2)
-              ) * 111 * 10
-            ) / 10,
-
-            availability: "Unknown",
-
-            address:
-              item.tags?.["addr:full"] ||
-              item.tags?.street ||
-              "Nearby Area",
-
-            location: {
-              coordinates: [item.lon, item.lat],
-            },
-          };
-        }
-      );
+      const services: ServiceData[] = data.services || [];
 
       if (services.length > 0) {
         allServicesRef.current = services;
@@ -317,6 +254,22 @@ const response = await fetch(
 
     let watchId: number;
     if (navigator.geolocation) {
+      // Get quick low-accuracy location immediately to initialize map and load services
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (cancelled) return;
+          const { latitude, longitude } = pos.coords;
+          setUserPos([latitude, longitude]);
+          if (!hasFetchedServicesRef.current) {
+            fetchServices(latitude, longitude);
+            lastFetchPositionRef.current = [latitude, longitude];
+          }
+          onLocationReady?.(latitude, longitude);
+        },
+        () => {},
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 10000 }
+      );
+
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
           if (cancelled) return;
@@ -398,6 +351,7 @@ const response = await fetch(
         },
         () => {
           if (cancelled) return;
+          if (lastFetchPositionRef.current) return; // Already have a location, don't overwrite with default
 
           const lat = 28.6139,
             lng = 77.209;

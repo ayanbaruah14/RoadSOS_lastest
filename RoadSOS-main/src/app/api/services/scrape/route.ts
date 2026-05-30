@@ -27,8 +27,8 @@ interface NormalizedService {
 
 function classifyService(tags: Record<string, string>): string | null {
   if (tags.amenity === "hospital" || tags.healthcare === "hospital") return "hospital";
-  if (tags.amenity === "clinic" || tags.healthcare === "clinic") return "hospital";
   if (tags.amenity === "police") return "police";
+  if (tags.amenity === "police_station") return "police";
   if (tags.emergency === "ambulance_station") return "ambulance";
   if (tags.amenity === "fire_station") return "ambulance"; // fire stations often have ambulance
   if (tags.shop === "car_repair" || tags.craft === "car_repair") return "repair";
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     const safeRadius = Math.min(radius, 15000);
 
     // Build Overpass query — remove extra whitespace
-    const query = `[out:json][timeout:30];(nwr["amenity"="hospital"](around:${safeRadius},${lat},${lng});nwr["healthcare"="hospital"](around:${safeRadius},${lat},${lng});nwr["amenity"="clinic"](around:${safeRadius},${lat},${lng});nwr["amenity"="police"](around:${safeRadius},${lat},${lng});nwr["emergency"="ambulance_station"](around:${safeRadius},${lat},${lng});nwr["amenity"="fire_station"](around:${safeRadius},${lat},${lng});nwr["shop"="car_repair"](around:${safeRadius},${lat},${lng});nwr["craft"="car_repair"](around:${safeRadius},${lat},${lng});nwr["shop"="tyres"](around:${safeRadius},${lat},${lng});nwr["shop"="car"](around:${safeRadius},${lat},${lng}););out center tags;`;
+    const query = `[out:json][timeout:30];(nwr["amenity"="hospital"](around:${safeRadius},${lat},${lng});nwr["healthcare"="hospital"](around:${safeRadius},${lat},${lng});nwr["amenity"="police"](around:${safeRadius},${lat},${lng});nwr["emergency"="ambulance_station"](around:${safeRadius},${lat},${lng});nwr["amenity"="fire_station"](around:${safeRadius},${lat},${lng});nwr["shop"="car_repair"](around:${safeRadius},${lat},${lng});nwr["craft"="car_repair"](around:${safeRadius},${lat},${lng});nwr["shop"="tyres"](around:${safeRadius},${lat},${lng});nwr["shop"="car"](around:${safeRadius},${lat},${lng}););out center tags;`;
 
     const url = `${OVERPASS_API}?data=${encodeURIComponent(query)}`;
     const response = await fetch(url, {
@@ -107,6 +107,22 @@ export async function GET(req: NextRequest) {
       const tags = el.tags || {};
       const name = tags.name || tags["name:en"] || "";
       if (!name) continue; // Skip unnamed POIs
+
+      // Only show general hospitals, not any pharmacy/chemist/drugstore/dispensary types
+      const nameLower = name.toLowerCase();
+      if (
+        nameLower.includes("pharmacy") ||
+        nameLower.includes("chemist") ||
+        nameLower.includes("medicos") ||
+        nameLower.includes("medical store") ||
+        nameLower.includes("medical hall") ||
+        nameLower.includes("drugstore") ||
+        nameLower.includes("drug store") ||
+        nameLower.includes("pharma") ||
+        nameLower.includes("dispensary")
+      ) {
+        continue;
+      }
 
       const serviceType = classifyService(tags);
       if (!serviceType) continue;
