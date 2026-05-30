@@ -306,29 +306,34 @@ export default function ProfilePage() {
       <div style={{ minHeight: "100dvh", background: "var(--bg)", position: "relative", overflowX: "hidden" }}>
         <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 120px", position: "relative", zIndex: 1 }}>
 
-          {/* ─── HEADER ─── */}
-          <div className="fade-up" style={{ paddingTop: 32, paddingBottom: 28, textAlign: "center" }}>
-            {/* Back link */}
-            <Link href="/user" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--muted)", textDecoration: "none", marginBottom: 24, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--s1)", transition: "all .18s" }}>
-              {Icon.back} Back to Map
-            </Link>
+{/* ─── HEADER ─── */}
+<div className="fade-up" style={{ paddingTop: 32, paddingBottom: 28 }}>
+  
+  {/* Top row: back button left, avatar centered */}
+<div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, height: 76 }}>
+  
+  <Link href="/user" style={{ position: "absolute", left: 0, top: 0, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--s1)", transition: "all .18s" }}>
+    {Icon.back} Back to Map
+  </Link>
 
-            {/* Avatar */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div className="avatar-ring" style={{ width: 76, height: 76 }}>
-                <div className="avatar-inner">
-                  <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 28, fontWeight: 800, color: "var(--text)" }}>{initials}</span>
-                </div>
-              </div>
-            </div>
+  <div className="avatar-ring" style={{ width: 76, height: 76 }}>
+    <div className="avatar-inner">
+      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 28, fontWeight: 800, color: "var(--text)" }}>{initials}</span>
+    </div>
+  </div>
 
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 19, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 4 }}>
-              My Profile
-            </div>
-            <div style={{ fontSize: 12, color: "var(--muted)", fontFamily: "'Space Mono', monospace" }}>
-              {profile.name || "Complete your profile"}
-            </div>
-          </div>
+</div>
+
+  <div style={{ textAlign: "center" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 19, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.01em", marginBottom: 4 }}>
+      My Profile
+    </div>
+    <div style={{ fontSize: 12, color: "var(--muted)", fontFamily: "'Space Mono', monospace" }}>
+      {profile.name || "Complete your profile"}
+    </div>
+  </div>
+
+</div>
 
           {/* ─── TABS ─── */}
           <div className="fade-up d1" style={{ display: "flex", gap: 6, marginBottom: 24, overflowX: "auto", paddingBottom: 2, flexWrap: "nowrap", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
