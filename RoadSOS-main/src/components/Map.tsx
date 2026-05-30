@@ -92,6 +92,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   const markersRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const hasFetchedServicesRef = useRef(false);
+  const fetchRetryCountRef = useRef(0);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const allServicesRef = useRef<ServiceData[]>([]);
   const [servicesVersion, setServicesVersion] = useState(0);
@@ -123,7 +124,11 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     }));
   }
 
-  async function fetchServices(lat: number, lng: number) {
+  async function fetchServices(lat: number, lng: number, isRetry = false) {
+    // Abort controller with 15s timeout to prevent mobile hangs
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const query = `
         [out:json];
@@ -136,13 +141,20 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         out body;
       `;
 
-const response = await fetch(
-  "https://overpass-api.de/api/interpreter",
-  { method: "POST", body: query }
-);
+      const response = await fetch(
+        "https://overpass-api.de/api/interpreter",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "data=" + encodeURIComponent(query),
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error("Overpass API failed");
+        throw new Error(`Overpass API failed with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -210,13 +222,26 @@ const response = await fetch(
         onServicesLoaded?.(services);
 
         onError?.(`📡 Loaded ${services.length} live nearby services`);
+
+        // Mark as successfully fetched & reset retry counter
+        hasFetchedServicesRef.current = true;
+        fetchRetryCountRef.current = 0;
       } else {
         throw new Error("No nearby services found");
       }
 
     } catch (error) {
+      clearTimeout(timeoutId);
+      console.error("[Services] Fetch failed:", error);
 
-      console.error(error);
+      // Retry up to 3 times with increasing delay (mobile networks can be slow)
+      if (!isRetry && fetchRetryCountRef.current < 3) {
+        fetchRetryCountRef.current += 1;
+        const retryDelay = fetchRetryCountRef.current * 3000; // 3s, 6s, 9s
+        console.log(`[Services] Retrying in ${retryDelay / 1000}s (attempt ${fetchRetryCountRef.current}/3)...`);
+        setTimeout(() => fetchServices(lat, lng, true), retryDelay);
+        return; // Don't load fallback yet, retry is pending
+      }
 
       const cachedServices =
         localStorage.getItem(
@@ -256,6 +281,8 @@ const response = await fetch(
 
       }
 
+      // Allow re-fetch on next position update since it failed
+      hasFetchedServicesRef.current = false;
     }
   }
 
@@ -327,7 +354,8 @@ const response = await fetch(
 
             fetchServices(latitude, longitude);
 
-            hasFetchedServicesRef.current = true;
+            // Don't set hasFetchedServicesRef here — it's set inside
+            // fetchServices only on SUCCESS, so failures will retry
 
             lastFetchPositionRef.current = [
               latitude,
@@ -435,7 +463,7 @@ const response = await fetch(
 
           //fetchServices(lat, lng);
         },
-        { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
       );
     }
 
