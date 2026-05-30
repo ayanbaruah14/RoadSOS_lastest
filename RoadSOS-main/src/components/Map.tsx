@@ -176,21 +176,15 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         );
 
       } else {
-
-        const fallback =
-          generateFallback(lat, lng);
-
-        allServicesRef.current =
-          fallback;
+        allServicesRef.current = [];
 
         setServicesVersion((v) => v + 1);
 
-        onServicesLoaded?.(fallback);
+        onServicesLoaded?.([]);
 
         onError?.(
-          "Using fallback simulated services"
+          "⚠️ Offline Mode — No cached services available"
         );
-
       }
 
     }
