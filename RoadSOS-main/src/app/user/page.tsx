@@ -133,7 +133,6 @@ export default function UserPage() {
 
   const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
-  // Shared fetchRoute — called by both sidebar Directions button AND map popup Directions button
   const fetchRoute = useCallback(async (service: ServiceData) => {
     if (!userLocation) return;
     setRouteLoading(service._id);
@@ -165,7 +164,8 @@ export default function UserPage() {
   const clearRoute = () => setRouteData(null);
   const cancelEmergency = () => { setCrashDetected(false); setCountdown(null); setSosTriggered(false); };
 
-  const sosBottom = routeData ? 188 : 32;
+  // ── FIX: raised from 188 → 284 so SOS clears the route panel (108px bottom + ~160px card height + 16px gap)
+  const sosBottom = routeData ? 284 : 32;
 
   return (
     <>
@@ -233,7 +233,6 @@ export default function UserPage() {
         .up-icon-btn svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
         .up-icon-btn svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
         .up-icon-btn svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
-
         .up-logout {
           display:flex; align-items:center; gap:6px;
           height:36px; padding:0 12px; border-radius:11px; cursor:pointer;
@@ -280,9 +279,11 @@ export default function UserPage() {
         .up-crash-badge {
           display:flex; align-items:center; gap:10px;
           background:rgba(140,20,20,.95); border:1px solid rgba(239,68,68,.50);
-          border-radius:14px; padding:9px 18px;
+          border-radius:14px; padding:9px 14px;
           animation:cpulse 1s ease-in-out infinite alternate;
-          pointer-events:none; white-space:nowrap;
+          /* FIX: allow wrapping on small screens instead of overflowing */
+          flex-wrap:wrap; justify-content:center;
+          max-width:calc(100vw - 48px);
         }
         @keyframes cpulse {
           from { box-shadow:0 0 0 3px rgba(239,68,68,.08),0 6px 24px rgba(239,68,68,.30); }
@@ -308,7 +309,10 @@ export default function UserPage() {
 
         /* ─── ROUTE PANEL ─── */
         .up-route-panel {
-          position:absolute; bottom:100px; left:12px; right:12px;
+          position:absolute;
+          /* FIX: use calc with safe-area-inset so it clears iPhone home bar */
+          bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+          left:12px; right:12px;
           z-index:1000; pointer-events:auto;
           animation:slideup .35s cubic-bezier(.16,1,.3,1) both;
         }
@@ -346,6 +350,7 @@ export default function UserPage() {
         .up-stat-l { font-size:10px; color:var(--text-hint); margin-top:3px; letter-spacing:.06em; text-transform:uppercase; }
         .up-stat-d { width:1px; height:34px; background:var(--border); margin:0 14px; }
 
+        /* Prevent horizontal overflow on small viewports */
         html, body { overflow-x: hidden; max-width: 100vw; }
 
         /* ─── SOS AREA ─── */
@@ -353,7 +358,10 @@ export default function UserPage() {
           position:absolute; left:50%; transform:translateX(-50%);
           z-index:1000; display:flex; flex-direction:column; align-items:center; gap:8px;
           transition:bottom .3s cubic-bezier(.16,1,.3,1);
+          /* FIX: constrain width, allow internal wrapping */
           max-width: calc(100vw - 24px);
+          width: max-content;
+          box-sizing: border-box;
         }
 
         /* ─── SIDEBAR ─── */
@@ -415,6 +423,26 @@ export default function UserPage() {
           font-family:var(--font-display); font-size:13px; color:#93c5fd;
           pointer-events:none; white-space:nowrap;
           animation:slideup .3s cubic-bezier(.16,1,.3,1) both;
+        }
+
+        /* ─── MOBILE RESPONSIVE ─── */
+        @media (max-width: 480px) {
+          .up-brand-name { font-size:13px; }
+          .up-logout span { display:none; }
+          .up-logout { padding:0 10px; }
+          .up-stat-v { font-size:15px; }
+          .up-stat-d { margin:0 8px; }
+          .up-route-card { padding:12px 14px; }
+          .up-route-ico { width:34px; height:34px; border-radius:10px; }
+          .up-route-name { font-size:13px; }
+          .up-sidebar { width: min(296px, 88vw); }
+        }
+
+        @media (max-width: 360px) {
+          .up-actions { gap:4px; }
+          .up-icon-btn { width:32px; height:32px; border-radius:9px; }
+          .up-brand { padding:6px 10px 6px 6px; gap:7px; }
+          .up-brand-badge { width:28px; height:28px; border-radius:8px; font-size:9px; }
         }
       `}</style>
 
@@ -536,7 +564,7 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* Route fetching toast — shown while loading from map popup click */}
+        {/* Route fetching toast */}
         {routeLoading && !routeData && (
           <div className="up-route-panel">
             <div className="up-route-loading">
@@ -546,8 +574,14 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* ── SOS AREA ── */}
-        <div className="up-sos-area" style={{ bottom: sosBottom }}>
+        {/* ── SOS AREA ──
+            FIX: bottom uses calc() with env(safe-area-inset-bottom) for iPhone home bar.
+            sosBottom = 284px when route active (108 panel-bottom + ~160 card-height + 16 gap),
+            or 32px at rest. */}
+        <div
+          className="up-sos-area"
+          style={{ bottom: `calc(${sosBottom}px + env(safe-area-inset-bottom, 0px))` }}
+        >
           <SOSButton
             userProfile={userProfile || getUserProfile()}
             userLocation={userLocation}
