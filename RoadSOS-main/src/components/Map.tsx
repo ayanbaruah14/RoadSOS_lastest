@@ -327,115 +327,141 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     userMarkerRef.current.setLatLng([userPos[0], userPos[1]]);
   }, [userPos]);
 
-  // Update markers when filter or services change
-  useEffect(() => {
-    if (!markersRef.current || !mapRef.current) return;
-    markersRef.current.clearLayers();
+useEffect(() => {
+  if (!markersRef.current || !mapRef.current) return;
+  markersRef.current.clearLayers();
 
-    const services = allServicesRef.current;
-    const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
+  const services = allServicesRef.current;
+  const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
-    const typeLabels: Record<string, string> = {
-      hospital: "🏥 Hospital", police: "👮 Police", ambulance: "🚑 Ambulance",
-      towing: "🚗 Towing", repair: "🔧 Repair", showroom: "🏪 Showroom",
-    };
-    const typeColors: Record<string, string> = {
-      hospital: "#dc2626", police: "#2563eb", ambulance: "#059669",
-      towing: "#d97706", repair: "#7c3aed", showroom: "#0891b2",
-    };
+  const typeLabels: Record<string, string> = {
+    hospital: "🏥 Hospital", police: "👮 Police", ambulance: "🚑 Ambulance",
+    towing: "🚗 Towing", repair: "🔧 Repair", showroom: "🏪 Showroom",
+  };
+  const typeColors: Record<string, string> = {
+    hospital: "#dc2626", police: "#2563eb", ambulance: "#059669",
+    towing: "#d97706", repair: "#7c3aed", showroom: "#0891b2",
+  };
 
-    filtered.forEach((service) => {
-      const [lng, lat] = service.location.coordinates;
-      const icon = serviceIcons[service.type] || serviceIcons.hospital;
-      const color = typeColors[service.type] || "#3b82f6";
-      const label = typeLabels[service.type] || service.type;
-      const phoneValid = hasValidPhone(service.phone);
-      const safeId = service._id.replace(/"/g, "&quot;");
+  filtered.forEach((service) => {
+    const [lng, lat] = service.location.coordinates;
+    const icon = serviceIcons[service.type] || serviceIcons.hospital;
+    const color = typeColors[service.type] || "#3b82f6";
+    const label = typeLabels[service.type] || service.type;
+    const phoneValid = hasValidPhone(service.phone);
+    const safeId = service._id.replace(/"/g, "&quot;");
 
-      const callButtonHtml = phoneValid
-        ? `<button onclick="window.open('tel:${service.phone[0]}')"
-              style="flex:1;padding:8px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
-              📞 Call
-           </button>`
-        : `<button disabled
-              style="flex:1;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
-              No Phone
-           </button>`;
+    const callButtonHtml = phoneValid
+      ? `<button onclick="window.open('tel:${service.phone[0]}')"
+            style="flex:1;padding:8px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
+            📞 Call
+         </button>`
+      : `<button disabled
+            style="flex:1;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
+            No Phone
+         </button>`;
 
-      const marker = L.marker([lat, lng], { icon });
-      marker.bindPopup(
-        `<div style="min-width:200px;padding:10px;font-family:'Plus Jakarta Sans',sans-serif;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-            <span style="background:${color};color:#fff;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${label}</span>
-          </div>
-          <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:6px;line-height:1.3;">${service.name}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.55);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
-            ${phoneValid ? `<span>📞 ${service.phone[0]}</span>` : `<span style="color:rgba(255,255,255,0.25);">📞 No phone available</span>`}
-            <span>📏 ${service.distance} km away</span>
-            <span>⭐ ${service.rating} · ${service.availability}</span>
-            ${service.address ? `<span>📍 ${service.address}</span>` : ""}
-          </div>
-          <div style="display:flex;gap:7px;">
-            ${callButtonHtml}
-            <button onclick="window.__roadsos_requestRoute('${safeId}')"
-              style="flex:1;padding:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
-              🗺️ Directions
-            </button>
-          </div>
-        </div>`,
-        { maxWidth: 260 }
-      );
-      marker.addTo(markersRef.current!);
-    });
-  }, [activeFilter, servicesVersion]);
-
-  // Draw/clear route when routeData changes
-  useEffect(() => {
-    if (!routeLayerRef.current || !mapRef.current) return;
-    routeLayerRef.current.clearLayers();
-    if (!routeData || routeData.points.length === 0) return;
-
-    const map = mapRef.current;
-
-    const glowLine = L.polyline(routeData.points, {
-      color: "#3b82f6", weight: 10, opacity: 0.25,
-      lineCap: "round", lineJoin: "round",
-    });
-    glowLine.addTo(routeLayerRef.current);
-
-    const mainLine = L.polyline(routeData.points, {
-      color: "#3b82f6", weight: 5, opacity: 0.9,
-      lineCap: "round", lineJoin: "round", dashArray: "12, 8",
-    });
-    mainLine.addTo(routeLayerRef.current);
-
-    const destIcon = L.divIcon({
-      className: "",
-      html: `<div style="position:relative;width:44px;height:44px;">
-        <div style="position:absolute;top:2px;left:2px;width:40px;height:40px;border-radius:50%;border:3px solid #3b82f6;opacity:0.4;animation:sosPulse 2s infinite;"></div>
-        <div style="position:absolute;top:6px;left:6px;width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(59,130,246,0.5);border:2px solid rgba(255,255,255,0.4);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    const marker = L.marker([lat, lng], { icon });
+    marker.bindPopup(
+      `<div style="min-width:200px;padding:10px;font-family:'Plus Jakarta Sans',sans-serif;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="background:${color};color:#fff;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${label}</span>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:6px;line-height:1.3;">${service.name}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.55);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
+          ${phoneValid ? `<span>📞 ${service.phone[0]}</span>` : `<span style="color:rgba(255,255,255,0.25);">📞 No phone available</span>`}
+          <span>📏 ${service.distance} km away</span>
+          <span>⭐ ${service.rating} · ${service.availability}</span>
+          ${service.address ? `<span>📍 ${service.address}</span>` : ""}
+        </div>
+        <div style="display:flex;gap:7px;">
+          ${callButtonHtml}
+          <button onclick="window.__roadsos_requestRoute('${safeId}')"
+            style="flex:1;padding:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
+            🗺️ Directions
+          </button>
         </div>
       </div>`,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22],
-    });
-
-    const destMarker = L.marker([routeData.destination.lat, routeData.destination.lng], { icon: destIcon });
-    destMarker.bindPopup(
-      `<div style="text-align:center;padding:6px;">
-        <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${routeData.destination.name}</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.5);">${(routeData.distance / 1000).toFixed(1)} km · ~${Math.round(routeData.duration / 60)} min</div>
-      </div>`
+      { maxWidth: 260 }
     );
-    destMarker.addTo(routeLayerRef.current);
 
-    const allPoints: [number, number][] = [...routeData.points];
-    if (userPos) allPoints.push(userPos);
-    const bounds = L.latLngBounds(allPoints);
-    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    marker.addTo(markersRef.current!);
 
-  }, [routeData, userPos]);
+    // Hide marker immediately if a route is already active
+    if (routeData) {
+      const el = marker.getElement?.();
+      if (el) el.style.display = "none";
+    }
+  });
+}, [activeFilter, servicesVersion, routeData]);
+
+// Draw/clear route when routeData changes
+useEffect(() => {
+  if (!routeLayerRef.current || !mapRef.current) return;
+  routeLayerRef.current.clearLayers();
+
+  // Hide/show all service markers based on whether a route is active
+  if (markersRef.current) {
+    markersRef.current.eachLayer((layer) => {
+      const el = (layer as L.Marker).getElement?.();
+      if (el) el.style.display = routeData ? "none" : "";
+    });
+  }
+
+  if (!routeData || routeData.points.length === 0) return;
+
+  const map = mapRef.current;
+
+  const glowLine = L.polyline(routeData.points, {
+    color: "#3b82f6", weight: 12, opacity: 0.15,
+    lineCap: "round", lineJoin: "round",
+  });
+  glowLine.addTo(routeLayerRef.current);
+
+  const mainLine = L.polyline(routeData.points, {
+    color: "#60a5fa", weight: 4, opacity: 0.95,
+    lineCap: "round", lineJoin: "round",
+  });
+  mainLine.addTo(routeLayerRef.current);
+
+  // Animated dashed overlay
+  const dashedLine = L.polyline(routeData.points, {
+    color: "#ffffff", weight: 2, opacity: 0.35,
+    lineCap: "round", lineJoin: "round", dashArray: "8, 14",
+  });
+  dashedLine.addTo(routeLayerRef.current);
+
+  const destIcon = L.divIcon({
+    className: "",
+    html: `<div style="position:relative;width:52px;height:52px;">
+      <div style="position:absolute;top:0;left:0;width:52px;height:52px;border-radius:50%;border:2px solid rgba(59,130,246,0.5);animation:sosPulse 2s infinite;"></div>
+      <div style="position:absolute;top:8px;left:8px;width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(59,130,246,0.6);border:2px solid rgba(255,255,255,0.5);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+    </div>`,
+    iconSize: [52, 52],
+    iconAnchor: [26, 26],
+  });
+
+  const destMarker = L.marker(
+    [routeData.destination.lat, routeData.destination.lng],
+    { icon: destIcon }
+  );
+  destMarker.bindPopup(
+    `<div style="text-align:center;padding:8px 4px;">
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${routeData.destination.name}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);">${(routeData.distance / 1000).toFixed(1)} km · ~${Math.round(routeData.duration / 60)} min</div>
+    </div>`
+  );
+  destMarker.addTo(routeLayerRef.current);
+
+  const allPoints: [number, number][] = [...routeData.points];
+  if (userPos) allPoints.push(userPos);
+  const bounds = L.latLngBounds(allPoints);
+  // Fit with padding that accounts for the route card at bottom
+  map.fitBounds(bounds, { paddingTopLeft: [20, 160], paddingBottomRight: [20, 260], maxZoom: 16 });
+
+}, [routeData, userPos]);
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: "100vh" }}>
