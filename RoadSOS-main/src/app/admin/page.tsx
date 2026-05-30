@@ -112,21 +112,20 @@ export default function AdminPage() {
   const router = useRouter();
 
   // Auth guard: redirect to signup if not authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("roadsos_token");
-    if (!token) {
-      router.replace("/signup");
-      return;
-    }
-    try {
-      const auth = JSON.parse(localStorage.getItem("roadsos_auth") || "{}");
-      if (auth.role !== "admin") {
-        router.replace("/user");
-      }
-    } catch {
-      router.replace("/signup");
-    }
-  }, [router]);
+useEffect(() => {
+  const auth = localStorage.getItem("roadsos_auth");
+
+  if (!auth) {
+    router.replace("/signup");
+    return;
+  }
+
+  const user = JSON.parse(auth);
+
+  if (user.role !== "admin") {
+    router.replace("/user");
+  }
+}, [router]);
 
   const [alerts, setAlerts] = useState<SOSAlertData[]>([]);
   const [loading, setLoading] = useState(true);

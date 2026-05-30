@@ -52,12 +52,23 @@ export default function SignupPage() {
   });
 
   // Redirect if already authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("roadsos_token");
-    if (token) {
-      router.replace("/");
+useEffect(() => {
+  const auth = localStorage.getItem("roadsos_auth");
+
+  if (auth) {
+    try {
+      const user = JSON.parse(auth);
+
+      if (user.role === "admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/user");
+      }
+    } catch {
+      localStorage.removeItem("roadsos_auth");
     }
-  }, [router]);
+  }
+}, [router]);
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

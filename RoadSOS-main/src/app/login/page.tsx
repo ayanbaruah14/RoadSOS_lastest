@@ -13,8 +13,8 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    const token = localStorage.getItem("roadsos_token");
-    if (token) {
+    const auth = localStorage.getItem("roadsos_auth");
+    if (auth) {
       router.replace("/");
     }
   }, [router]);

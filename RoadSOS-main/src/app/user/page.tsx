@@ -53,6 +53,13 @@ const typeColors: Record<string, string> = {
 
 export default function UserPage() {
   const router = useRouter();
+  const handleLogout = () => {
+  localStorage.removeItem("roadsos_auth");
+  localStorage.removeItem("roadsos_token");
+  localStorage.removeItem("roadsos_user_profile");
+
+  router.replace("/signup");
+};
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [activeFilter, setActiveFilter] = useState<ServiceType | "all">("all");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -80,12 +87,13 @@ export default function UserPage() {
   }, []);
 
   // Auth guard: redirect to signup if not authenticated
-  useEffect(() => {
-    const token = localStorage.getItem("roadsos_token");
-    if (!token) {
-      router.replace("/signup");
-    }
-  }, [router]);
+useEffect(() => {
+  const auth = localStorage.getItem("roadsos_auth");
+
+  if (!auth) {
+    router.replace("/signup");
+  }
+}, [router]);
 
   useEffect(() => {
 
@@ -376,6 +384,13 @@ export default function UserPage() {
             >
               👤
             </Link>
+              <button
+    onClick={handleLogout}
+    className="glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 hover:bg-red-500/20 hover:text-red-400 transition-colors text-sm cursor-pointer"
+    title="Logout"
+  >
+    🚪
+  </button>
             <button
               onClick={() => setTrafficOpen(!trafficOpen)}
               className={`glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 transition-all cursor-pointer ${trafficOpen ? "bg-blue-500/20 border-blue-500/30 text-blue-400" : "hover:bg-white/10 text-white/70"}`}
