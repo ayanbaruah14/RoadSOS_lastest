@@ -260,6 +260,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
             fetchServices(latitude, longitude);
             hasFetchedServicesRef.current = true;
             lastFetchPositionRef.current = [latitude, longitude];
+            map.flyTo([latitude, longitude], 15, { duration: 1.8 });
           } else if (lastFetchPositionRef.current) {
             const distanceMoved = calculateDistanceMeters(
               lastFetchPositionRef.current[0],
