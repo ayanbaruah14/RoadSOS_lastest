@@ -137,7 +137,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
       `;
 
 const response = await fetch(
-  "/api/overpass",
+  "https://overpass-api.de/api/interpreter",
   { method: "POST", body: query }
 );
 
