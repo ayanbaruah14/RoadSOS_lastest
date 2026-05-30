@@ -125,31 +125,52 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   }
 
   async function fetchServices(lat: number, lng: number, isRetry = false) {
-    // Abort controller with 15s timeout to prevent mobile hangs
+    // Abort controller with 25s timeout to prevent mobile hangs
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    // Overpass API endpoints — try primary, then mirror on failure
+    const endpoints = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+    ];
 
     try {
       const query = `
-        [out:json];
+        [out:json][timeout:15];
         (
-          node["amenity"="hospital"](around:10000,${lat},${lng});
-          node["amenity"="police"](around:10000,${lat},${lng});
-          node["amenity"="ambulance_station"](around:10000,${lat},${lng});
-          node["shop"="car_repair"](around:10000,${lat},${lng});
+          node["amenity"="hospital"](around:5000,${lat},${lng});
+          node["amenity"="police"](around:5000,${lat},${lng});
+          node["amenity"="ambulance_station"](around:5000,${lat},${lng});
+          node["shop"="car_repair"](around:5000,${lat},${lng});
         );
         out body;
       `;
 
-      const response = await fetch(
-        "https://overpass-api.de/api/interpreter",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "data=" + encodeURIComponent(query),
-          signal: controller.signal,
+      let response: Response | null = null;
+      let lastError: any = null;
+
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`[Services] Trying ${endpoint}...`);
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "data=" + encodeURIComponent(query),
+            signal: controller.signal,
+          });
+          if (response.ok) break; // success — stop trying
+          console.warn(`[Services] ${endpoint} returned ${response.status}, trying next...`);
+          response = null;
+        } catch (e) {
+          lastError = e;
+          console.warn(`[Services] ${endpoint} failed:`, e);
         }
-      );
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error(`All Overpass endpoints failed`);
+      }
 
       clearTimeout(timeoutId);
 
