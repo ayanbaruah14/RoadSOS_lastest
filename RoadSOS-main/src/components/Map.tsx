@@ -244,6 +244,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
             lastFetchPositionRef.current = [latitude, longitude];
           }
           onLocationReady?.(latitude, longitude);
+           map.flyTo([latitude, longitude], 15, { duration: 1.8 });
         },
         () => {},
         { enableHighAccuracy: false, timeout: 5000, maximumAge: 10000 }
