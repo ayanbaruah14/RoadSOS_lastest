@@ -83,9 +83,17 @@ interface MapProps {
   onLocationReady?: (lat: number, lng: number) => void;
   onServicesLoaded?: (services: ServiceData[]) => void;
   onError?: (msg: string) => void;
+  onRouteRequest?: (service: ServiceData) => void;
 }
 
-export default function Map({ activeFilter, routeData, onLocationReady, onServicesLoaded, onError }: MapProps) {
+// Attach route request handler to window so popup HTML buttons can call it
+declare global {
+  interface Window {
+    __roadsos_requestRoute: (serviceId: string) => void;
+  }
+}
+
+export default function Map({ activeFilter, routeData, onLocationReady, onServicesLoaded, onError, onRouteRequest }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,7 +105,19 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   const [servicesVersion, setServicesVersion] = useState(0);
   const lastFetchPositionRef = useRef<[number, number] | null>(null);
 
-  // Fallback simulated data when MongoDB is not available
+  // Keep global handler in sync with latest onRouteRequest callback
+  useEffect(() => {
+    window.__roadsos_requestRoute = (serviceId: string) => {
+      const service = allServicesRef.current.find((s) => s._id === serviceId);
+      if (service && onRouteRequest) {
+        onRouteRequest(service);
+        // Close any open popup
+        mapRef.current?.closePopup();
+      }
+    };
+  }, [onRouteRequest]);
+
+  // Fallback simulated data when API is not available
   function generateFallback(lat: number, lng: number): ServiceData[] {
     const items = [
       { name: "City Trauma Center", type: "hospital" as ServiceType, phone: ["+91 112"], rating: 4.5, availability: "24x7", offset: [0.008, 0.012] },
@@ -126,108 +146,50 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   async function fetchServices(lat: number, lng: number) {
     try {
       const response = await fetch(`/api/services/scrape?lat=${lat}&lng=${lng}&radius=10000`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch from scrape API");
-      }
+      if (!response.ok) throw new Error("Failed to fetch from scrape API");
 
       const data = await response.json();
       const services: ServiceData[] = data.services || [];
 
       if (services.length > 0) {
         allServicesRef.current = services;
-
-        localStorage.setItem(
-          "cachedNearbyServices",
-          JSON.stringify(services)
-        );
-
+        localStorage.setItem("cachedNearbyServices", JSON.stringify(services));
         setServicesVersion((v) => v + 1);
-
         onServicesLoaded?.(services);
-
         onError?.(`📡 Loaded ${services.length} live nearby services`);
       } else {
         throw new Error("No nearby services found");
       }
-
     } catch (error) {
-
       console.error(error);
-
-      const cachedServices =
-        localStorage.getItem(
-          "cachedNearbyServices"
-        );
-
+      const cachedServices = localStorage.getItem("cachedNearbyServices");
       if (cachedServices) {
-
-        const parsed =
-          JSON.parse(cachedServices);
-
+        const parsed = JSON.parse(cachedServices);
         allServicesRef.current = parsed;
-
         setServicesVersion((v) => v + 1);
-
         onServicesLoaded?.(parsed);
-
-        onError?.(
-          "📦 Offline Mode — Using cached nearby services"
-        );
-
+        onError?.("📦 Offline Mode — Using cached nearby services");
       } else {
-
-        const fallback =
-          generateFallback(lat, lng);
-
-        allServicesRef.current =
-          fallback;
-
+        const fallback = generateFallback(lat, lng);
+        allServicesRef.current = fallback;
         setServicesVersion((v) => v + 1);
-
         onServicesLoaded?.(fallback);
-
-        onError?.(
-          "Using fallback simulated services"
-        );
-
+        onError?.("Using fallback simulated services");
       }
-
     }
   }
 
-  function calculateDistanceMeters(
-    lat1: number,
-    lng1: number,
-    lat2: number,
-    lng2: number
-  ) {
-
+  function calculateDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
     const R = 6371000;
-
-    const dLat =
-      ((lat2 - lat1) * Math.PI) / 180;
-
-    const dLng =
-      ((lng2 - lng1) * Math.PI) / 180;
-
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
     const a =
-      Math.sin(dLat / 2) *
-        Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
         Math.cos((lat2 * Math.PI) / 180) *
         Math.sin(dLng / 2) *
         Math.sin(dLng / 2);
-
-    return (
-      2 *
-      R *
-      Math.atan2(
-        Math.sqrt(a),
-        Math.sqrt(1 - a)
-      )
-    );
-
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   // Initialize map
@@ -254,7 +216,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
 
     let watchId: number;
     if (navigator.geolocation) {
-      // Get quick low-accuracy location immediately to initialize map and load services
+      // Quick low-accuracy first fix
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (cancelled) return;
@@ -262,6 +224,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
           setUserPos([latitude, longitude]);
           if (!hasFetchedServicesRef.current) {
             fetchServices(latitude, longitude);
+            hasFetchedServicesRef.current = true;
             lastFetchPositionRef.current = [latitude, longitude];
           }
           onLocationReady?.(latitude, longitude);
@@ -274,145 +237,81 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         (pos) => {
           if (cancelled) return;
           const { latitude, longitude } = pos.coords;
-          setUserPos([latitude, longitude]); 
+          setUserPos([latitude, longitude]);
 
           if (!hasFetchedServicesRef.current) {
-
             fetchServices(latitude, longitude);
-
             hasFetchedServicesRef.current = true;
-
-            lastFetchPositionRef.current = [
+            lastFetchPositionRef.current = [latitude, longitude];
+          } else if (lastFetchPositionRef.current) {
+            const distanceMoved = calculateDistanceMeters(
+              lastFetchPositionRef.current[0],
+              lastFetchPositionRef.current[1],
               latitude,
               longitude
-            ];
-
-          } else if (lastFetchPositionRef.current) {
-
-            const distanceMoved =
-              calculateDistanceMeters(
-                lastFetchPositionRef.current[0],
-                lastFetchPositionRef.current[1],
-                latitude,
-                longitude
-              );
-
-
-
+            );
             if (distanceMoved > 500) {
-
-              console.log(
-                "[Services Refresh] User moved:",
-                distanceMoved.toFixed(0),
-                "meters"
-              );    
-
               fetchServices(latitude, longitude);
-
-              lastFetchPositionRef.current = [
-                latitude,
-                longitude
-              ];
-
+              lastFetchPositionRef.current = [latitude, longitude];
             }
-
           }
 
           if (!userMarkerRef.current) {
-
-            userMarkerRef.current = L.marker(
-              [latitude, longitude],
-              { icon: userIcon }
-            )
+            userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon })
               .addTo(map)
               .bindPopup(
                 `<div style="text-align:center;padding:4px;">
-                  <div style="font-weight:600;font-size:14px;">
-                    📍 You are here
-                  </div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.5);">
-                    ${latitude.toFixed(4)}, ${longitude.toFixed(4)}
-                  </div>
+                  <div style="font-weight:600;font-size:14px;">📍 You are here</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.5);">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</div>
                 </div>`
               );
-
           } else {
-
-            userMarkerRef.current.setLatLng([
-              latitude,
-              longitude
-            ]);
-
+            userMarkerRef.current.setLatLng([latitude, longitude]);
           }
 
           onLocationReady?.(latitude, longitude);
-
-          //fetchServices(latitude, longitude);
         },
         () => {
           if (cancelled) return;
-          if (lastFetchPositionRef.current) return; // Already have a location, don't overwrite with default
+          if (lastFetchPositionRef.current) return;
 
-          const lat = 28.6139,
-            lng = 77.209;
-
+          const lat = 28.6139, lng = 77.209;
           setUserPos([lat, lng]);
-          
-          if (!userMarkerRef.current) {
 
-            userMarkerRef.current = L.marker(
-              [lat, lng],
-              { icon: userIcon }
-            )
+          if (!userMarkerRef.current) {
+            userMarkerRef.current = L.marker([lat, lng], { icon: userIcon })
               .addTo(map)
               .bindPopup(
                 `<div style="text-align:center;padding:4px;">
-                  <div style="font-weight:600;font-size:14px;">
-                    📍 Default Location
-                  </div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.5);">
-                    New Delhi (location denied)
-                  </div>
+                  <div style="font-weight:600;font-size:14px;">📍 Default Location</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,0.5);">New Delhi (location denied)</div>
                 </div>`
               );
-
           } else {
-
-            userMarkerRef.current.setLatLng([
-              lat,
-              lng
-            ]);
-
+            userMarkerRef.current.setLatLng([lat, lng]);
           }
 
           onLocationReady?.(lat, lng);
-
-          //fetchServices(lat, lng);
         },
         { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
       );
     }
 
-    return () => { cancelled = true; navigator.geolocation.clearWatch(watchId); map.remove(); mapRef.current = null; };
+    return () => {
+      cancelled = true;
+      navigator.geolocation.clearWatch(watchId);
+      map.remove();
+      mapRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-
-    if (!userPos) return;
-
-    if (userMarkerRef.current) {
-
-      userMarkerRef.current.setLatLng([
-        userPos[0],
-        userPos[1]
-      ]);
-
-    }
-
+    if (!userPos || !userMarkerRef.current) return;
+    userMarkerRef.current.setLatLng([userPos[0], userPos[1]]);
   }, [userPos]);
 
-  // Update markers when filter changes
+  // Update markers when filter or services change
   useEffect(() => {
     if (!markersRef.current || !mapRef.current) return;
     markersRef.current.clearLayers();
@@ -420,69 +319,57 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     const services = allServicesRef.current;
     const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
-    const typeLabels: Record<string, string> = { hospital: "🏥 Hospital", police: "👮 Police", ambulance: "🚑 Ambulance", towing: "🚗 Towing", repair: "🔧 Repair", showroom: "🏪 Showroom" };
-    const typeColors: Record<string, string> = { hospital: "#dc2626", police: "#2563eb", ambulance: "#059669", towing: "#d97706", repair: "#7c3aed", showroom: "#0891b2" };
+    const typeLabels: Record<string, string> = {
+      hospital: "🏥 Hospital", police: "👮 Police", ambulance: "🚑 Ambulance",
+      towing: "🚗 Towing", repair: "🔧 Repair", showroom: "🏪 Showroom",
+    };
+    const typeColors: Record<string, string> = {
+      hospital: "#dc2626", police: "#2563eb", ambulance: "#059669",
+      towing: "#d97706", repair: "#7c3aed", showroom: "#0891b2",
+    };
 
     filtered.forEach((service) => {
       const [lng, lat] = service.location.coordinates;
       const icon = serviceIcons[service.type] || serviceIcons.hospital;
-      const color = typeColors[service.type] || "#fff";
+      const color = typeColors[service.type] || "#3b82f6";
       const label = typeLabels[service.type] || service.type;
       const phoneStr = service.phone.join(", ");
+      const hasPhone = service.phone[0] !== "Not Available";
+
+      // Escape service ID for safe embedding in HTML attribute
+      const safeId = service._id.replace(/"/g, "&quot;");
 
       const marker = L.marker([lat, lng], { icon });
       marker.bindPopup(
-        `<div style="min-width:180px;padding:8px;">
-          <span style="background:${color};color:#fff;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;">${label}</span>
-          <div style="font-weight:700;font-size:15px;margin:8px 0 4px;">${service.name}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.6);display:flex;flex-direction:column;gap:4px;">
+        `<div style="min-width:200px;padding:10px;font-family:'Plus Jakarta Sans',sans-serif;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+            <span style="background:${color};color:#fff;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${label}</span>
+          </div>
+          <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:6px;line-height:1.3;">${service.name}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.55);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
             <span>📞 ${phoneStr}</span>
             <span>📏 ${service.distance} km away</span>
             <span>⭐ ${service.rating} · ${service.availability}</span>
             ${service.address ? `<span>📍 ${service.address}</span>` : ""}
           </div>
-          ${
-            service.phone[0] !== "Not Available"
-              ? `
-                <button 
-                  onclick="window.open('tel:${service.phone[0]}')"
-                  style="
-                    margin-top:10px;
-                    width:100%;
-                    padding:8px;
-                    background:linear-gradient(135deg,${color},${color}cc);
-                    color:white;
-                    border:none;
-                    border-radius:8px;
-                    font-weight:600;
-                    font-size:13px;
-                    cursor:pointer;
-                  "
-                >
-                  Call Now
-                </button>
-              `
-              : `
-                <button
-                  disabled
-                  style="
-                    margin-top:10px;
-                    width:100%;
-                    padding:8px;
-                    background:#444;
-                    color:#999;
-                    border:none;
-                    border-radius:8px;
-                    font-weight:600;
-                    font-size:13px;
-                    cursor:not-allowed;
-                  "
-                >
-                  Phone Unavailable
-                </button>
-              `
-          }
-        </div>`
+          <div style="display:flex;gap:7px;">
+            ${hasPhone
+              ? `<button onclick="window.open('tel:${service.phone[0]}')"
+                  style="flex:1;padding:8px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
+                  📞 Call
+                </button>`
+              : `<button disabled
+                  style="flex:1;padding:8px;background:#333;color:#666;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
+                  No Phone
+                </button>`
+            }
+            <button onclick="window.__roadsos_requestRoute('${safeId}')"
+              style="flex:1;padding:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
+              🗺️ Directions
+            </button>
+          </div>
+        </div>`,
+        { maxWidth: 260 }
       );
       marker.addTo(markersRef.current!);
     });
@@ -492,32 +379,22 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   useEffect(() => {
     if (!routeLayerRef.current || !mapRef.current) return;
     routeLayerRef.current.clearLayers();
-
     if (!routeData || routeData.points.length === 0) return;
 
     const map = mapRef.current;
 
-    // Draw route polyline with a glow effect (two layers)
     const glowLine = L.polyline(routeData.points, {
-      color: "#3b82f6",
-      weight: 10,
-      opacity: 0.25,
-      lineCap: "round",
-      lineJoin: "round",
+      color: "#3b82f6", weight: 10, opacity: 0.25,
+      lineCap: "round", lineJoin: "round",
     });
     glowLine.addTo(routeLayerRef.current);
 
     const mainLine = L.polyline(routeData.points, {
-      color: "#3b82f6",
-      weight: 5,
-      opacity: 0.9,
-      lineCap: "round",
-      lineJoin: "round",
-      dashArray: "12, 8",
+      color: "#3b82f6", weight: 5, opacity: 0.9,
+      lineCap: "round", lineJoin: "round", dashArray: "12, 8",
     });
     mainLine.addTo(routeLayerRef.current);
 
-    // Destination marker (pulsing ring)
     const destIcon = L.divIcon({
       className: "",
       html: `<div style="position:relative;width:44px;height:44px;">
@@ -530,10 +407,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
       iconAnchor: [22, 22],
     });
 
-    const destMarker = L.marker(
-      [routeData.destination.lat, routeData.destination.lng],
-      { icon: destIcon }
-    );
+    const destMarker = L.marker([routeData.destination.lat, routeData.destination.lng], { icon: destIcon });
     destMarker.bindPopup(
       `<div style="text-align:center;padding:6px;">
         <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${routeData.destination.name}</div>
@@ -542,7 +416,6 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     );
     destMarker.addTo(routeLayerRef.current);
 
-    // Fit map to route bounds
     const allPoints: [number, number][] = [...routeData.points];
     if (userPos) allPoints.push(userPos);
     const bounds = L.latLngBounds(allPoints);
@@ -552,36 +425,27 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: "100vh" }}>
-
-      <div
-        ref={containerRef}
-        className="w-full h-full"
-        style={{ minHeight: "100vh" }}
-      />
-
-<button
-  onClick={() => {
-    if (!mapRef.current || !userPos) return;
-    mapRef.current.flyTo([userPos[0], userPos[1]], 16, { duration: 1.5 });
-  }}
-  className="absolute bottom-24 right-4 z-[1000] w-14 h-14"
-style={{
-  borderRadius: "50%",
-  background: "rgba(34,211,238,0.10)",
-  border: "1px solid rgba(34,211,238,0.22)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  backdropFilter: "blur(24px) saturate(180%)",
-  boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
-}}
->
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-    <circle cx="12" cy="10" r="3"/>
-  </svg>
-</button>
-
+      <div ref={containerRef} className="w-full h-full" style={{ minHeight: "100vh" }} />
+      <button
+        onClick={() => {
+          if (!mapRef.current || !userPos) return;
+          mapRef.current.flyTo([userPos[0], userPos[1]], 16, { duration: 1.5 });
+        }}
+        className="absolute bottom-24 right-4 z-[1000] w-14 h-14"
+        style={{
+          borderRadius: "50%",
+          background: "rgba(34,211,238,0.10)",
+          border: "1px solid rgba(34,211,238,0.22)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          backdropFilter: "blur(24px) saturate(180%)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </button>
     </div>
   );
 }

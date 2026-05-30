@@ -100,9 +100,7 @@ export default function UserPage() {
         const y = event.acceleration.y || 0;
         const z = event.acceleration.z || 0;
         let totalAcceleration = Math.sqrt(x * x + y * y + z * z);
-        if (totalAcceleration < 1) {
-          totalAcceleration = 0;
-        }
+        if (totalAcceleration < 1) totalAcceleration = 0;
         setAcceleration(totalAcceleration);
         const now = Date.now();
         if (totalAcceleration > 20 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
@@ -135,22 +133,33 @@ export default function UserPage() {
 
   const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
+  // Shared fetchRoute — called by both sidebar Directions button AND map popup Directions button
   const fetchRoute = useCallback(async (service: ServiceData) => {
     if (!userLocation) return;
     setRouteLoading(service._id);
     const [destLng, destLat] = service.location.coordinates;
     try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destLng},${destLat}?overview=full&geometries=polyline&steps=true`);
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destLng},${destLat}?overview=full&geometries=polyline&steps=true`
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.code === "Ok" && data.routes?.length) {
           const route = data.routes[0];
-          setRouteData({ points: decodePolyline(route.geometry), distance: route.distance, duration: route.duration, destination: { name: service.name, lat: destLat, lng: destLng, type: service.type } });
+          setRouteData({
+            points: decodePolyline(route.geometry),
+            distance: route.distance,
+            duration: route.duration,
+            destination: { name: service.name, lat: destLat, lng: destLng, type: service.type },
+          });
           setSidebarOpen(false);
         }
       }
-    } catch (err) { console.error("Failed to fetch route:", err); }
-    finally { setRouteLoading(null); }
+    } catch (err) {
+      console.error("Failed to fetch route:", err);
+    } finally {
+      setRouteLoading(null);
+    }
   }, [userLocation]);
 
   const clearRoute = () => setRouteData(null);
@@ -184,16 +193,11 @@ export default function UserPage() {
           z-index: 1000; pointer-events: none;
           display: flex; flex-direction: column; gap: 0;
         }
-        .up-row1 {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 12px 12px 0; pointer-events: auto;
-        }
+        .up-row1 { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 0; pointer-events: auto; }
         .up-row2 { padding: 8px 12px 0; pointer-events: auto; }
         .up-row3 { padding: 6px 12px 0; pointer-events: auto; }
-        /* telemetry row — right below notice/filters */
         .up-row4 { padding: 6px 12px 0; pointer-events: auto; }
 
-        /* brand */
         .up-brand {
           display: flex; align-items: center; gap: 10px;
           background: var(--surface); border: 1px solid var(--border);
@@ -215,7 +219,6 @@ export default function UserPage() {
         .up-brand-name { font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--text-primary); letter-spacing:-.01em; line-height:1; }
         .up-brand-sub  { font-size:10px; color:var(--text-hint); margin-top:2px; font-family:var(--font-body); }
 
-        /* actions */
         .up-actions { display:flex; align-items:center; gap:6px; }
         .up-icon-btn {
           width:36px; height:36px; border-radius:11px;
@@ -226,16 +229,11 @@ export default function UserPage() {
           text-decoration:none; box-shadow:var(--shadow);
         }
         .up-icon-btn:hover { background:rgba(255,255,255,.1); color:var(--text-primary); border-color:rgba(255,255,255,.14); }
-.up-icon-btn.traffic-on {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(255,255,255,.14);
-}
+        .up-icon-btn.traffic-on { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
+        .up-icon-btn svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
+        .up-icon-btn svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
+        .up-icon-btn svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
 
-.up-icon-btn svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
-.up-icon-btn svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
-.up-icon-btn svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
-
-        /* logout */
         .up-logout {
           display:flex; align-items:center; gap:6px;
           height:36px; padding:0 12px; border-radius:11px; cursor:pointer;
@@ -246,7 +244,6 @@ export default function UserPage() {
         }
         .up-logout:hover { background:rgba(239,68,68,.2); border-color:rgba(239,68,68,.45); color:#fca5a5; }
 
-        /* filters */
         .up-filters { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
         .up-filters::-webkit-scrollbar { display:none; }
         .up-filter-btn {
@@ -260,7 +257,6 @@ export default function UserPage() {
         .up-filter-btn:hover { color:var(--text-primary); border-color:rgba(255,255,255,.14); }
         .up-filter-btn.active { color:#fff; border-color:transparent; box-shadow:0 3px 14px rgba(0,0,0,.4); }
 
-        /* db notice */
         .up-notice {
           display:flex; align-items:center; gap:8px;
           background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.22);
@@ -269,7 +265,6 @@ export default function UserPage() {
         }
         .up-notice-x { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; padding:0; margin-left:auto; }
 
-        /* ─── TELEMETRY — inline under notice/filters ─── */
         .up-telem {
           display:inline-flex; align-items:center; gap:8px;
           background:rgba(6,7,15,.82); border:1px solid rgba(255,255,255,.07);
@@ -281,11 +276,10 @@ export default function UserPage() {
         .up-telem-val { color:var(--cyan); font-weight:600; font-family:var(--font-display); }
         .up-telem-sep { width:1px; height:12px; background:rgba(255,255,255,.1); }
 
-        /* ─── CRASH COUNTDOWN — renders BELOW the SOS button ─── */
+        /* ─── CRASH ─── */
         .up-crash-badge {
           display:flex; align-items:center; gap:10px;
-          background:rgba(140,20,20,.95);
-          border:1px solid rgba(239,68,68,.50);
+          background:rgba(140,20,20,.95); border:1px solid rgba(239,68,68,.50);
           border-radius:14px; padding:9px 18px;
           animation:cpulse 1s ease-in-out infinite alternate;
           pointer-events:none; white-space:nowrap;
@@ -304,8 +298,6 @@ export default function UserPage() {
           font-family:var(--font-display); font-weight:600; font-size:13px; color:#fff;
           pointer-events:none; white-space:nowrap;
         }
-
-        /* cancel button — below SOS button */
         .up-cancel-btn {
           padding:8px 24px; border-radius:50px; border:1px solid rgba(239,68,68,.35);
           background:rgba(239,68,68,.10); color:#f87171;
@@ -354,7 +346,6 @@ export default function UserPage() {
         .up-stat-l { font-size:10px; color:var(--text-hint); margin-top:3px; letter-spacing:.06em; text-transform:uppercase; }
         .up-stat-d { width:1px; height:34px; background:var(--border); margin:0 14px; }
 
-        /* no horizontal scroll anywhere */
         html, body { overflow-x: hidden; max-width: 100vw; }
 
         /* ─── SOS AREA ─── */
@@ -373,10 +364,7 @@ export default function UserPage() {
           height:100%; background:rgba(6,8,18,.97); border-left:1px solid rgba(255,255,255,.07);
           backdrop-filter:var(--blur); display:flex; flex-direction:column;
         }
-        .up-sb-head {
-          padding:16px; border-bottom:1px solid var(--border);
-          display:flex; align-items:center; justify-content:space-between;
-        }
+        .up-sb-head { padding:16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
         .up-sb-title { font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--text-primary); }
         .up-sb-count { font-size:11px; color:var(--text-hint); margin-top:2px; }
         .up-sb-close {
@@ -418,6 +406,16 @@ export default function UserPage() {
         .up-empty { text-align:center; padding:48px 16px; color:var(--text-hint); }
         .up-empty-icon { font-size:32px; margin-bottom:8px; }
         .up-empty-text { font-size:13px; font-family:var(--font-display); }
+
+        /* ─── ROUTE LOADING TOAST ─── */
+        .up-route-loading {
+          display:flex; align-items:center; gap:10px;
+          background:rgba(59,130,246,.12); border:1px solid rgba(59,130,246,.30);
+          border-radius:12px; padding:9px 16px;
+          font-family:var(--font-display); font-size:13px; color:#93c5fd;
+          pointer-events:none; white-space:nowrap;
+          animation:slideup .3s cubic-bezier(.16,1,.3,1) both;
+        }
       `}</style>
 
       <div className="relative h-full w-full" style={{ overflowX: "hidden" }}>
@@ -427,14 +425,13 @@ export default function UserPage() {
           onServicesLoaded={(s) => setServices(s)}
           onLocationReady={(lat, lng) => setUserLocation({ lat, lng })}
           onError={(msg) => setDbNotice(msg)}
+          onRouteRequest={fetchRoute}
         />
 
         {/* ── HEADER ── */}
         <div className="up-header">
-          {/* Row 1 */}
           <div className="up-row1">
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-
               <div className="up-brand">
                 <div className="up-brand-badge">SOS</div>
                 <div>
@@ -462,7 +459,6 @@ export default function UserPage() {
             </div>
           </div>
 
-          {/* Row 2 – filters */}
           <div className="up-row2">
             <div className="up-filters">
               {categories.map((cat) => (
@@ -474,7 +470,6 @@ export default function UserPage() {
             </div>
           </div>
 
-          {/* Row 3 – notice */}
           {dbNotice && (
             <div className="up-row3">
               <div className="up-notice" style={{ width: "fit-content" }}>
@@ -485,7 +480,6 @@ export default function UserPage() {
             </div>
           )}
 
-          {/* Row 4 – telemetry, always visible below notice/filters */}
           <div className="up-row4">
             <div className="up-telem">
               <span style={{ opacity:.5 }}>📈</span>
@@ -496,7 +490,6 @@ export default function UserPage() {
           </div>
         </div>
 
-        {/* ── TRAFFIC PANEL ── */}
         <TrafficPanel
           userLat={userLocation?.lat || null}
           userLng={userLocation?.lng || null}
@@ -505,7 +498,7 @@ export default function UserPage() {
           onClose={() => setTrafficOpen(false)}
         />
 
-        {/* ── ROUTE PANEL — floats just above SOS ── */}
+        {/* ── ROUTE PANEL ── */}
         {routeData && (
           <div className="up-route-panel">
             <div className="up-route-card">
@@ -543,9 +536,18 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* ── SOS AREA — SOS button on top, crash info + cancel below ── */}
-        <div className="up-sos-area" style={{ bottom: sosBottom }}>
+        {/* Route fetching toast — shown while loading from map popup click */}
+        {routeLoading && !routeData && (
+          <div className="up-route-panel">
+            <div className="up-route-loading">
+              <span className="up-spin" style={{ borderTopColor: "#93c5fd", borderColor: "rgba(147,197,253,0.3)" }} />
+              Calculating route…
+            </div>
+          </div>
+        )}
 
+        {/* ── SOS AREA ── */}
+        <div className="up-sos-area" style={{ bottom: sosBottom }}>
           <SOSButton
             userProfile={userProfile || getUserProfile()}
             userLocation={userLocation}
@@ -557,7 +559,6 @@ export default function UserPage() {
             }}
           />
 
-          {/* Crash countdown badge — BELOW the SOS button */}
           {crashDetected && (
             <div className="up-crash-badge">
               <span className="up-crash-label">🚨 Auto SOS in</span>
@@ -566,14 +567,12 @@ export default function UserPage() {
             </div>
           )}
 
-          {/* SOS triggered confirmation — BELOW the SOS button */}
           {sosTriggered && (
             <div className="up-sos-triggered">
               <span>✅</span> Emergency SOS Triggered
             </div>
           )}
 
-          {/* Cancel button — only shown when crash countdown is active */}
           {(crashDetected || sosTriggered) && (
             <button onClick={cancelEmergency} className="up-cancel-btn">
               Cancel Emergency
