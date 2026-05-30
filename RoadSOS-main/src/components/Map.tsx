@@ -483,13 +483,12 @@ useEffect(() => {
   );
   destMarker.addTo(routeLayerRef.current);
 
-  const allPoints: [number, number][] = [...routeData.points];
-  if (userPos) allPoints.push(userPos);
-  const bounds = L!.latLngBounds(allPoints);
+  const bounds = L!.latLngBounds(routeData.points);
   // Fit with padding that accounts for the route card at bottom
   map.fitBounds(bounds, { paddingTopLeft: [20, 160], paddingBottomRight: [20, 260], maxZoom: 16 });
 
-}, [routeData, userPos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [routeData]);
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: "100vh" }}>
