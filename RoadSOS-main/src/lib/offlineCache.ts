@@ -78,14 +78,7 @@ export async function prefetchEmergencyRoute(lat: number, lng: number): Promise<
     const scrapeRes = await fetch(`/api/services/scrape?lat=${lat}&lng=${lng}&radius=10000`);
     if (scrapeRes.ok) {
       const data = await scrapeRes.json();
-      const services = data.services || [];
-
-      // Save all fetched services to local storage for offline Map usage
-      if (services.length > 0) {
-        localStorage.setItem("cachedNearbyServices", JSON.stringify(services));
-      }
-
-      hospitals = services
+      hospitals = (data.services || [])
         .filter((s: { type: string }) => s.type === "hospital")
         .map((s: { name: string; location: { coordinates: [number, number] }; phone: string[]; distance: number }) => ({
           name: s.name,

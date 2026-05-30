@@ -6,6 +6,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SOSButton from "@/components/SOSButton";
 import TrafficPanel from "@/components/TrafficPanel";
+import ChatbotPanel from "@/components/ChatbotPanel";
 import { getUserProfile, type UserProfile } from "@/lib/profiles";
 import { prefetchEmergencyRoute, isCacheFresh, hasUserMoved } from "@/lib/offlineCache";
 import type { ServiceType, ServiceData, RouteData } from "@/components/Map";
@@ -99,12 +100,12 @@ export default function UserPage() {
         const y = event.acceleration.y || 0;
         const z = event.acceleration.z || 0;
         let totalAcceleration = Math.sqrt(x * x + y * y + z * z);
-        if (totalAcceleration < 2) {
+        if (totalAcceleration < 1) {
           totalAcceleration = 0;
         }
         setAcceleration(totalAcceleration);
         const now = Date.now();
-        if (totalAcceleration > 25 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
+        if (totalAcceleration > 20 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
           setLastCrashTime(now);
           setCrashDetected(true);
           setCountdown(10);
@@ -629,6 +630,7 @@ export default function UserPage() {
           </div>
         </div>
       </div>
+      <ChatbotPanel />
     </>
   );
 }
