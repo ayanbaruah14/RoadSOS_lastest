@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import type L_Type from "leaflet";
 import { getUserProfile } from "@/lib/profiles";
 import { loadEmergencyCache } from "@/lib/offlineCache";
 
@@ -60,7 +59,7 @@ export default function EmergencyPage() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<L_Type.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsWatchRef = useRef<number | null>(null);
@@ -260,6 +259,11 @@ export default function EmergencyPage() {
     if (!mapContainerRef.current || mapRef.current) return;
     if (!hospital) return;
 
+    (async () => {
+    const L = (await import("leaflet")).default;
+    await import("leaflet/dist/leaflet.css");
+    if (!mapContainerRef.current || mapRef.current) return;
+
     const map = L.map(mapContainerRef.current, { zoomControl: false, attributionControl: false });
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
@@ -295,7 +299,8 @@ export default function EmergencyPage() {
     map.fitBounds(bounds, { padding: [50, 50] });
 
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    })(); // end async IIFE
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, [hospital, routePoints, userLat, userLng]);
 
   // Timer countdown

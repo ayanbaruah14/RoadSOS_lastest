@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import type L_Type from "leaflet";
 import { getUserProfile } from "@/lib/profiles";
 import { loadEmergencyCache } from "@/lib/offlineCache";
 
@@ -259,7 +258,7 @@ export default function EmergencyPage() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<L_Type.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gpsWatchRef = useRef<number | null>(null);
@@ -357,6 +356,11 @@ export default function EmergencyPage() {
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current || !hospital) return;
+    let cancelled = false;
+    (async () => {
+    const L = (await import("leaflet")).default;
+    await import("leaflet/dist/leaflet.css");
+    if (cancelled || !mapContainerRef.current || mapRef.current) return;
     const map = L.map(mapContainerRef.current, { zoomControl: false, attributionControl: false });
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map);
     const userIcon = L.divIcon({ className: "", html: `<div style="width:14px;height:14px;background:#3d8bff;border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(61,139,255,0.25),0 0 16px rgba(61,139,255,0.5);"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] });
@@ -366,7 +370,8 @@ export default function EmergencyPage() {
     if (routePoints.length > 0) L.polyline(routePoints, { color: "#3d8bff", weight: 4, opacity: 0.75, dashArray: "10, 7" }).addTo(map);
     map.fitBounds(L.latLngBounds([[userLat, userLng], [hospital.lat, hospital.lng]]), { padding: [50, 50] });
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    })(); // end async IIFE
+    return () => { cancelled = true; if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, [hospital, routePoints, userLat, userLng]);
 
   useEffect(() => {

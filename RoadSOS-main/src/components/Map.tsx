@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import type L_Type from "leaflet";
 
 // ─── Shared phone validation util ────────────────────────────────────────────
 export const hasValidPhone = (phone: string[]): boolean =>
@@ -12,50 +11,58 @@ export const hasValidPhone = (phone: string[]): boolean =>
   phone[0] !== "N/A" &&
   phone[0] !== "—";
 
-// User location icon
-const userIcon = L.divIcon({
-  className: "",
-  html: `<div style="position:relative;width:20px;height:20px;">
+// Lazy-initialized icons (only created once, on the client)
+let L: typeof L_Type | null = null;
+let userIcon: L_Type.DivIcon;
+let serviceIcons: Record<string, L_Type.DivIcon>;
+
+function ensureLeafletIcons(leaflet: typeof L_Type) {
+  if (L) return; // already initialized
+  L = leaflet;
+
+  userIcon = L.divIcon({
+    className: "",
+    html: `<div style="position:relative;width:20px;height:20px;">
     <div style="width:20px;height:20px;background:radial-gradient(circle,#3b82f6,#1d4ed8);border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px rgba(59,130,246,0.6),0 0 24px rgba(59,130,246,0.3);"></div>
     <div style="position:absolute;top:-4px;left:-4px;width:28px;height:28px;border:2px solid rgba(59,130,246,0.4);border-radius:50%;animation:sosPulse 2s infinite;"></div>
   </div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
 
-// Color-coded service marker icons
-const serviceIcons: Record<string, L.DivIcon> = {
-  hospital: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#dc2626,#991b1b);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(220,38,38,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-  police: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#2563eb,#1e40af);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,99,235,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-  ambulance: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#059669,#047857);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(5,150,105,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-  towing: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#d97706,#b45309);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(217,119,6,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-  repair: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(124,58,237,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-  showroom: L.divIcon({
-    className: "",
-    html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#0891b2,#0e7490);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(8,145,178,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>`,
-    iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
-  }),
-};
+  serviceIcons = {
+    hospital: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#dc2626,#991b1b);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(220,38,38,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+    police: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#2563eb,#1e40af);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(37,99,235,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+    ambulance: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#059669,#047857);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(5,150,105,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+    towing: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#d97706,#b45309);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(217,119,6,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+    repair: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(124,58,237,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+    showroom: L.divIcon({
+      className: "",
+      html: `<div style="width:36px;height:36px;background:linear-gradient(135deg,#0891b2,#0e7490);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(8,145,178,0.4);border:2px solid rgba(255,255,255,0.2);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -20],
+    }),
+  };
+}
 
 export type ServiceType = "hospital" | "police" | "ambulance" | "towing" | "repair" | "showroom";
 
@@ -102,11 +109,11 @@ declare global {
 }
 
 export default function Map({ activeFilter, routeData, onLocationReady, onServicesLoaded, onError, onRouteRequest }: MapProps) {
-  const mapRef = useRef<L.Map | null>(null);
-  const userMarkerRef = useRef<L.Marker | null>(null);
+  const mapRef = useRef<L_Type.Map | null>(null);
+  const userMarkerRef = useRef<L_Type.Marker | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<L.LayerGroup | null>(null);
-  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const markersRef = useRef<L_Type.LayerGroup | null>(null);
+  const routeLayerRef = useRef<L_Type.LayerGroup | null>(null);
   const hasFetchedServicesRef = useRef(false);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const allServicesRef = useRef<ServiceData[]>([]);
@@ -213,21 +220,27 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
 
-    const map = L.map(containerRef.current, {
+    (async () => {
+    const leaflet = (await import("leaflet")).default;
+    await import("leaflet/dist/leaflet.css");
+    ensureLeafletIcons(leaflet);
+    if (cancelled || !containerRef.current) return;
+
+    const map = L!.map(containerRef.current, {
       center: [20.5937, 78.9629],
       zoom: 5,
       zoomControl: false,
     });
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    L!.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
 
-    L.control.zoom({ position: "bottomright" }).addTo(map);
-    markersRef.current = L.layerGroup().addTo(map);
-    routeLayerRef.current = L.layerGroup().addTo(map);
+    L!.control.zoom({ position: "bottomright" }).addTo(map);
+    markersRef.current = L!.layerGroup().addTo(map);
+    routeLayerRef.current = L!.layerGroup().addTo(map);
     mapRef.current = map;
 
     let watchId: number;
@@ -275,7 +288,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
           }
 
           if (!userMarkerRef.current) {
-            userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon })
+            userMarkerRef.current = L!.marker([latitude, longitude], { icon: userIcon })
               .addTo(map)
               .bindPopup(
                 `<div style="text-align:center;padding:4px;">
@@ -297,7 +310,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
           setUserPos([lat, lng]);
 
           if (!userMarkerRef.current) {
-            userMarkerRef.current = L.marker([lat, lng], { icon: userIcon })
+            userMarkerRef.current = L!.marker([lat, lng], { icon: userIcon })
               .addTo(map)
               .bindPopup(
                 `<div style="text-align:center;padding:4px;">
@@ -314,12 +327,15 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
       );
     }
+    })(); // end async IIFE
 
     return () => {
       cancelled = true;
-      navigator.geolocation.clearWatch(watchId);
-      map.remove();
-      mapRef.current = null;
+      navigator.geolocation.clearWatch(0); // safe no-op if no watch
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -330,7 +346,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   }, [userPos]);
 
 useEffect(() => {
-  if (!markersRef.current || !mapRef.current) return;
+  if (!markersRef.current || !mapRef.current || !L) return;
   markersRef.current.clearLayers();
 
   const services = allServicesRef.current;
@@ -363,7 +379,7 @@ useEffect(() => {
             No Phone
          </button>`;
 
-    const marker = L.marker([lat, lng], { icon });
+    const marker = L!.marker([lat, lng], { icon });
     marker.bindPopup(
       `<div style="min-width:200px;padding:10px;font-family:'Plus Jakarta Sans',sans-serif;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
@@ -399,13 +415,13 @@ useEffect(() => {
 
 // Draw/clear route when routeData changes
 useEffect(() => {
-  if (!routeLayerRef.current || !mapRef.current) return;
+  if (!routeLayerRef.current || !mapRef.current || !L) return;
   routeLayerRef.current.clearLayers();
 
   // Hide/show all service markers based on whether a route is active
   if (markersRef.current) {
     markersRef.current.eachLayer((layer) => {
-      const el = (layer as L.Marker).getElement?.();
+      const el = (layer as L_Type.Marker).getElement?.();
       if (el) el.style.display = routeData ? "none" : "";
     });
   }
@@ -414,26 +430,26 @@ useEffect(() => {
 
   const map = mapRef.current;
 
-  const glowLine = L.polyline(routeData.points, {
+  const glowLine = L!.polyline(routeData.points, {
     color: "#3b82f6", weight: 12, opacity: 0.15,
     lineCap: "round", lineJoin: "round",
   });
   glowLine.addTo(routeLayerRef.current);
 
-  const mainLine = L.polyline(routeData.points, {
+  const mainLine = L!.polyline(routeData.points, {
     color: "#60a5fa", weight: 4, opacity: 0.95,
     lineCap: "round", lineJoin: "round",
   });
   mainLine.addTo(routeLayerRef.current);
 
   // Animated dashed overlay
-  const dashedLine = L.polyline(routeData.points, {
+  const dashedLine = L!.polyline(routeData.points, {
     color: "#ffffff", weight: 2, opacity: 0.35,
     lineCap: "round", lineJoin: "round", dashArray: "8, 14",
   });
   dashedLine.addTo(routeLayerRef.current);
 
-  const destIcon = L.divIcon({
+  const destIcon = L!.divIcon({
     className: "",
     html: `<div style="position:relative;width:52px;height:52px;">
       <div style="position:absolute;top:0;left:0;width:52px;height:52px;border-radius:50%;border:2px solid rgba(59,130,246,0.5);animation:sosPulse 2s infinite;"></div>
@@ -445,7 +461,7 @@ useEffect(() => {
     iconAnchor: [26, 26],
   });
 
-  const destMarker = L.marker(
+  const destMarker = L!.marker(
     [routeData.destination.lat, routeData.destination.lng],
     { icon: destIcon }
   );
@@ -459,7 +475,7 @@ useEffect(() => {
 
   const allPoints: [number, number][] = [...routeData.points];
   if (userPos) allPoints.push(userPos);
-  const bounds = L.latLngBounds(allPoints);
+  const bounds = L!.latLngBounds(allPoints);
   // Fit with padding that accounts for the route card at bottom
   map.fitBounds(bounds, { paddingTopLeft: [20, 160], paddingBottomRight: [20, 260], maxZoom: 16 });
 
