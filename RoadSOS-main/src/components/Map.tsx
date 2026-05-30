@@ -386,7 +386,7 @@ useEffect(() => {
          </button>`
       : `<button disabled
             style="flex:1;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
-            No Phone
+            📞 No Phone
          </button>`;
 
     const marker = L!.marker([lat, lng], { icon });
@@ -406,7 +406,7 @@ useEffect(() => {
           ${callButtonHtml}
           <button onclick="window.__roadsos_requestRoute('${safeId}')"
             style="flex:1;padding:8px;background:rgba(59,130,246,0.10);color:#60a5fa;border:1px solid rgba(59,130,246,0.30);border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
-            📌 Directions
+            📍 Direction
           </button>
         </div>
       </div>`,

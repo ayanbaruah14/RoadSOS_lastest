@@ -320,25 +320,30 @@ export default function EmergencyPage() {
   useEffect(() => {
     async function findHospital() {
       let hospitals: { name: string; lat: number; lng: number; phone: string; distance: number }[] = [];
+      const cleanPhone = (phones: string[] | undefined) => {
+        const p = phones?.[0];
+        if (!p || p === "Not available" || p === "102") return "";
+        return p;
+      };
       try {
         const res = await fetch(`/api/services/scrape?lat=${userLat}&lng=${userLng}&radius=10000`);
-        if (res.ok) { const data = await res.json(); const h = (data.services || []).filter((s: { type: string }) => s.type === "hospital"); hospitals = h.map((s: { name: string; location: { coordinates: [number, number] }; phone: string[]; distance: number }) => ({ name: s.name, lat: s.location.coordinates[1], lng: s.location.coordinates[0], phone: s.phone?.[0] || "102", distance: s.distance })); }
+        if (res.ok) { const data = await res.json(); const h = (data.services || []).filter((s: { type: string }) => s.type === "hospital"); hospitals = h.map((s: { name: string; location: { coordinates: [number, number] }; phone: string[]; distance: number }) => ({ name: s.name, lat: s.location.coordinates[1], lng: s.location.coordinates[0], phone: cleanPhone(s.phone), distance: s.distance })); }
       } catch { /* ignore */ }
       if (hospitals.length === 0) {
         try {
           const res = await fetch(`/api/services/nearby?lat=${userLat}&lng=${userLng}&radius=15&type=hospital`);
-          if (res.ok) { const data = await res.json(); hospitals = (data.services || []).map((s: { name: string; location: { coordinates: [number, number] }; phone: string[]; distance: number }) => ({ name: s.name, lat: s.location.coordinates[1], lng: s.location.coordinates[0], phone: s.phone?.[0] || "102", distance: s.distance })); }
+          if (res.ok) { const data = await res.json(); hospitals = (data.services || []).map((s: { name: string; location: { coordinates: [number, number] }; phone: string[]; distance: number }) => ({ name: s.name, lat: s.location.coordinates[1], lng: s.location.coordinates[0], phone: cleanPhone(s.phone), distance: s.distance })); }
         } catch { /* ignore */ }
       }
       if (hospitals.length === 0) {
         const cached = loadEmergencyCache();
         if (cached) {
-          const info: HospitalInfo = { name: cached.hospital.name, lat: cached.hospital.lat, lng: cached.hospital.lng, phone: cached.hospital.phone, distance: cached.hospital.distance, eta: cached.hospital.eta };
+          const info: HospitalInfo = { name: cached.hospital.name, lat: cached.hospital.lat, lng: cached.hospital.lng, phone: cached.hospital.phone && cached.hospital.phone !== "102" ? cached.hospital.phone : "", distance: cached.hospital.distance, eta: cached.hospital.eta };
           setHospital(info); setRoutePoints(cached.routePoints);
           updateAlert({ nearestHospital: { name: info.name, distance: info.distance, eta: info.eta, lat: info.lat, lng: info.lng } }).catch(() => {});
           setPhase("timer"); return;
         }
-        hospitals = [{ name: "Nearest Hospital", lat: userLat + 0.008, lng: userLng + 0.012, phone: "102", distance: 1.5 }];
+        hospitals = [{ name: "Nearest Hospital", lat: userLat + 0.008, lng: userLng + 0.012, phone: "", distance: 1.5 }];
       }
       const closest = hospitals[0];
       let eta = Math.round(closest.distance * 3);
@@ -596,10 +601,16 @@ export default function EmergencyPage() {
                   <span>~{hospital.eta} min ETA</span>
                 </div>
               </div>
-              <a href={`tel:${hospital.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-                Call
-              </a>
+              {hospital.phone && hospital.phone !== "Not available" && hospital.phone !== "102" && hospital.phone !== "" ? (
+                <a href={`tel:${hospital.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                  Call
+                </a>
+              ) : (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
+                  📞No Phone
+                </div>
+              )}
             </div>
             </div>
           </div>

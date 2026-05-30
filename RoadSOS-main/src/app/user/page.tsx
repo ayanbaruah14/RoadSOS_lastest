@@ -650,7 +650,7 @@ export default function UserPage() {
                       {phoneOk ? (
                         <a href={`tel:${s.phone[0]}`} className="up-call">📞 Call</a>
                       ) : (
-                        <span className="up-call-disabled">No Phone</span>
+                        <span className="up-call-disabled">📞 No Phone</span>
                       )}
                       <button
                         onClick={() => fetchRoute(s)}
@@ -659,7 +659,7 @@ export default function UserPage() {
                       >
                         {routeLoading === s._id
                           ? <><span className="up-spin" />&nbsp;Loading</>
-                          : isActive ? "✓ Active" : "Directions"}
+                          : isActive ? "✓ Active" : "📍Directions"}
                       </button>
                     </div>
                   </div>
