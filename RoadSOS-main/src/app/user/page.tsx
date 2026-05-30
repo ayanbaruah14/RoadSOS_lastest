@@ -101,7 +101,7 @@ export default function UserPage() {
         const totalAcceleration = Math.sqrt(x * x + y * y + z * z);
         setAcceleration(totalAcceleration);
         const now = Date.now();
-        if (totalAcceleration > 15 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
+        if (totalAcceleration > 25 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
           setLastCrashTime(now);
           setCrashDetected(true);
           setCountdown(10);
@@ -222,7 +222,14 @@ export default function UserPage() {
           text-decoration:none; box-shadow:var(--shadow);
         }
         .up-icon-btn:hover { background:rgba(255,255,255,.1); color:var(--text-primary); border-color:rgba(255,255,255,.14); }
-        .up-icon-btn.traffic-on { background:rgba(34,211,238,.12); border-color:rgba(34,211,238,.3); color:var(--cyan); }
+.up-icon-btn.traffic-on {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.14);
+}
+
+.up-icon-btn.traffic-on svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
+.up-icon-btn.traffic-on svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
+.up-icon-btn.traffic-on svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
 
         /* logout */
         .up-logout {
