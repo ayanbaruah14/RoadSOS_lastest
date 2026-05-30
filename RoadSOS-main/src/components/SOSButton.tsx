@@ -231,18 +231,19 @@ export default function SOSButton({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            background: "rgba(5,150,105,0.88)",
-            border: "1px solid rgba(16,185,129,0.35)",
+            background: "#140505", // Fully opaque dark red-black (prevents map camouflage)
+            border: "1px solid rgba(239, 68, 68, 0.55)", // Highly visible red border
+            color: "#ff4d4d", // High-visibility vibrant premium red
             borderRadius: 12,
             padding: "7px 14px",
+            boxShadow: "0 6px 20px rgba(0, 0, 0, 0.5), 0 0 12px rgba(239, 68, 68, 0.18)", // Elevation shadow + glow
             fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontWeight: 600,
+            fontWeight: 700, // High-contrast bold weight
             fontSize: 12,
-            color: "#fff",
             whiteSpace: "nowrap",
           }}
         >
-          ✅ SOS sent — Help is on the way!
+          🚨 SOS Triggered — Stay Safe!
         </div>
       )}
     </div>

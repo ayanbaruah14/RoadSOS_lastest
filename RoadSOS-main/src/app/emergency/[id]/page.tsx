@@ -418,6 +418,36 @@ export default function EmergencyPage() {
     return `sms:${phones}${sep}body=${encodeURIComponent(body)}`;
   }, [userProfile, userLat, userLng, hospital]);
 
+  /* ─── WhatsApp deep-link builder ─── */
+  const buildWhatsAppUri = useCallback((isEscalated = false, specificPhone?: string) => {
+    if (!userProfile) return null;
+    const contacts = userProfile.emergencyContacts || [];
+    if (contacts.length === 0) return null;
+
+    const mapsLink = `https://maps.google.com/?q=${userLat},${userLng}`;
+    const hospitalLine = hospital ? `Hospital: ${hospital.name} (${hospital.distance} km away)` : "";
+
+    const body = isEscalated
+      ? `🚨 *CRITICAL ESCALATION — RoadSOS*\n\n` +
+        `*${userProfile.name}* may be in a road emergency and could not confirm they can reach the hospital.\n\n` +
+        `📞 *Phone:* ${userProfile.phone}\n` +
+        `🩸 *Blood Group:* ${userProfile.bloodGroup || "Unknown"}\n\n` +
+        `📍 *Live Location:*\n${mapsLink}\n\n` +
+        (hospitalLine ? `🏥 ${hospitalLine}\n\n` : "") +
+        `_Please check on them immediately._`
+      : `🆘 *Emergency Alert — RoadSOS*\n\n` +
+        `*${userProfile.name}* has triggered an SOS and may need help.\n\n` +
+        `📞 *Phone:* ${userProfile.phone}\n` +
+        `🩸 *Blood Group:* ${userProfile.bloodGroup || "Unknown"}\n\n` +
+        `📍 *Live Location:*\n${mapsLink}\n\n` +
+        (hospitalLine ? `🏥 ${hospitalLine}\n\n` : "") +
+        `_Please check on them._`;
+
+    const phoneNum = specificPhone || contacts[0]?.phone;
+    const phoneParam = phoneNum ? `phone=${phoneNum.replace(/\+/g, "").replace(/\s+/g, "")}&` : "";
+    return `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(body)}`;
+  }, [userProfile, userLat, userLng, hospital]);
+
   /* ─── Auto-open SMS on escalation ─── */
   useEffect(() => {
     if (phase !== "escalated" || smsOpened) return;
@@ -636,6 +666,7 @@ export default function EmergencyPage() {
               {(() => {
                 const emergencyContacts = userProfile?.emergencyContacts || [];
                 const smsUri = buildSmsUri(false);
+                const whatsAppUri = buildWhatsAppUri(false);
                 return emergencyContacts.length > 0 ? (
                   <div className="mp-card fade-up d4" style={{ width: "100%", padding: "14px 16px", textAlign: "left", borderColor: "rgba(255,184,48,0.18)", background: "rgba(255,184,48,0.04)", display: "flex", flexDirection: "column", gap: 12 }}>
                     {/* Card header */}
@@ -643,37 +674,58 @@ export default function EmergencyPage() {
                       <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg, #ffb830, #e69500)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, boxShadow: "0 4px 14px rgba(255,184,48,0.25)" }}>📩</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="display-text" style={{ fontSize: 12, color: "#ffb830" }}>Alert Emergency Contacts</div>
-                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>Tap to notify contacts via SMS</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>Tap to notify contacts via SMS/WhatsApp</div>
                       </div>
                     </div>
 
                     {/* Recipients */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {emergencyContacts.map((c, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
-                          <div style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#ffb830", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 11, color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
-                            <span style={{ fontSize: 9, color: "var(--muted)", marginLeft: 6 }}>{c.relation}</span>
+                      {emergencyContacts.map((c, i) => {
+                        const specificWhatsAppUri = buildWhatsAppUri(false, c.phone);
+                        return (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                            <div style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#ffb830", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: 11, color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
+                              <span style={{ fontSize: 9, color: "var(--muted)", marginLeft: 6 }}>{c.relation}</span>
+                            </div>
+                            {specificWhatsAppUri && (
+                              <a href={specificWhatsAppUri} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
+                                <svg width="11" height="11" fill="#25D366" viewBox="0 0 24 24"><path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.76.457 3.48 1.326 5.004l-1.41 5.15 5.27-1.382c1.47.8 3.12 1.22 4.8 1.22h.004c5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm6.388 13.916c-.27.76-1.57 1.48-2.17 1.54-.59.06-1.18.25-3.81-.79-3.37-1.34-5.51-4.78-5.68-5.01-.17-.23-1.38-1.84-1.38-3.5 0-1.67.87-2.5 1.18-2.84.3-.34.68-.43.9-.43H8.3c.18 0 .43.07.66.58.26.58.82 2.01.9 2.18.08.17.13.37.02.59-.11.23-.23.37-.39.54-.17.18-.36.41-.51.55-.17.16-.35.34-.15.68.2.33.88 1.45 1.89 2.35 1.3 1.16 2.39 1.52 2.73 1.69.34.17.54.14.74-.08.2-.23.87-1.01 1.1-1.35.23-.34.46-.28.78-.17.32.11 2.04 1.01 2.38 1.18.34.17.57.25.65.39.09.14.09.82-.18 1.58z"/></svg>
+                              </a>
+                            )}
+                            <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 6, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22d87a" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                            </a>
                           </div>
-                          <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d87a" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-                          </a>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
-                    {/* CTA */}
-                    {smsUri && (
-                      <a
-                        href={smsUri}
-                        onClick={() => setSmsOpened(true)}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%", padding: "11px", borderRadius: 10, background: "linear-gradient(135deg, #ffb830, #e69500)", border: "none", color: "#1a1a1a", fontSize: 12, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 24px rgba(255,184,48,0.28)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                        {smsOpened ? "Re-open SMS App" : "Send SMS to Contacts"}
-                      </a>
-                    )}
+                    {/* CTA Buttons */}
+                    <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                      {smsUri && (
+                        <a
+                          href={smsUri}
+                          onClick={() => setSmsOpened(true)}
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 8px", borderRadius: 10, background: "linear-gradient(135deg, #ffb830, #e69500)", border: "none", color: "#1a1a1a", fontSize: 11, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 20px rgba(255,184,48,0.2)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                          SMS Alert
+                        </a>
+                      )}
+                      {whatsAppUri && (
+                        <a
+                          href={whatsAppUri}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 8px", borderRadius: 10, background: "linear-gradient(135deg, #25D366, #128C7E)", border: "none", color: "white", fontSize: 11, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 20px rgba(37,211,102,0.2)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                        >
+                          <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.76.457 3.48 1.326 5.004l-1.41 5.15 5.27-1.382c1.47.8 3.12 1.22 4.8 1.22h.004c5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm6.388 13.916c-.27.76-1.57 1.48-2.17 1.54-.59.06-1.18.25-3.81-.79-3.37-1.34-5.51-4.78-5.68-5.01-.17-.23-1.38-1.84-1.38-3.5 0-1.67.87-2.5 1.18-2.84.3-.34.68-.43.9-.43H8.3c.18 0 .43.07.66.58.26.58.82 2.01.9 2.18.08.17.13.37.02.59-.11.23-.23.37-.39.54-.17.18-.36.41-.51.55-.17.16-.35.34-.15.68.2.33.88 1.45 1.89 2.35 1.3 1.16 2.39 1.52 2.73 1.69.34.17.54.14.74-.08.2-.23.87-1.01 1.1-1.35.23-.34.46-.28.78-.17.32.11 2.04 1.01 2.38 1.18.34.17.57.25.65.39.09.14.09.82-.18 1.58z"/></svg>
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
 
                     {smsOpened && (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 10, color: "#22d87a", fontWeight: 600 }}>
@@ -702,6 +754,7 @@ export default function EmergencyPage() {
           {phase === "escalated" && (() => {
             const emergencyContacts = userProfile?.emergencyContacts || [];
             const smsUri = buildSmsUri(true);
+            const whatsAppUri = buildWhatsAppUri(true);
             return (
             <div className="scale-in" style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", textAlign: "center" }}>
 
@@ -752,32 +805,54 @@ export default function EmergencyPage() {
                   {/* Recipients list */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 10, color: "var(--faint)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>Recipients</div>
-                    {emergencyContacts.map((c, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
-                        <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(255,59,59,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#ff5f5f", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
-                          <div style={{ fontSize: 10, color: "var(--muted)" }}>{c.relation} · {c.phone}</div>
+                    {emergencyContacts.map((c, i) => {
+                      const specificWhatsAppUri = buildWhatsAppUri(true, c.phone);
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(255,59,59,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#ff5f5f", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                            <div style={{ fontSize: 10, color: "var(--muted)" }}>{c.relation} · {c.phone}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {specificWhatsAppUri && (
+                              <a href={specificWhatsAppUri} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
+                                <svg width="12" height="12" fill="#25D366" viewBox="0 0 24 24"><path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.76.457 3.48 1.326 5.004l-1.41 5.15 5.27-1.382c1.47.8 3.12 1.22 4.8 1.22h.004c5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm6.388 13.916c-.27.76-1.57 1.48-2.17 1.54-.59.06-1.18.25-3.81-.79-3.37-1.34-5.51-4.78-5.68-5.01-.17-.23-1.38-1.84-1.38-3.5 0-1.67.87-2.5 1.18-2.84.3-.34.68-.43.9-.43H8.3c.18 0 .43.07.66.58.26.58.82 2.01.9 2.18.08.17.13.37.02.59-.11.23-.23.37-.39.54-.17.18-.36.41-.51.55-.17.16-.35.34-.15.68.2.33.88 1.45 1.89 2.35 1.3 1.16 2.39 1.52 2.73 1.69.34.17.54.14.74-.08.2-.23.87-1.01 1.1-1.35.23-.34.46-.28.78-.17.32.11 2.04 1.01 2.38 1.18.34.17.57.25.65.39.09.14.09.82-.18 1.58z"/></svg>
+                              </a>
+                            )}
+                            <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d87a" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                            </a>
+                          </div>
                         </div>
-                        <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0, transition: "all .18s" }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
-                          Call
-                        </a>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
-                  {/* CTA button */}
-                  {smsUri && (
-                    <a
-                      href={smsUri}
-                      onClick={() => setSmsOpened(true)}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg, #ff3b3b, #cc0000)", border: "none", color: "white", fontSize: 14, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 8px 32px rgba(255,59,59,0.35)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                      {smsOpened ? "Re-open SMS App" : "📩 Send SMS to Emergency Contacts"}
-                    </a>
-                  )}
+                  {/* CTA buttons */}
+                  <div style={{ display: "flex", gap: 10, width: "100%" }}>
+                    {smsUri && (
+                      <a
+                        href={smsUri}
+                        onClick={() => setSmsOpened(true)}
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px 8px", borderRadius: 12, background: "linear-gradient(135deg, #ff3b3b, #cc0000)", border: "none", color: "white", fontSize: 12.5, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 24px rgba(255,59,59,0.25)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        Send SMS
+                      </a>
+                    )}
+                    {whatsAppUri && (
+                      <a
+                        href={whatsAppUri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "13px 8px", borderRadius: 12, background: "linear-gradient(135deg, #25D366, #128C7E)", border: "none", color: "white", fontSize: 12.5, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 24px rgba(37,211,102,0.25)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                      >
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.76.457 3.48 1.326 5.004l-1.41 5.15 5.27-1.382c1.47.8 3.12 1.22 4.8 1.22h.004c5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm6.388 13.916c-.27.76-1.57 1.48-2.17 1.54-.59.06-1.18.25-3.81-.79-3.37-1.34-5.51-4.78-5.68-5.01-.17-.23-1.38-1.84-1.38-3.5 0-1.67.87-2.5 1.18-2.84.3-.34.68-.43.9-.43H8.3c.18 0 .43.07.66.58.26.58.82 2.01.9 2.18.08.17.13.37.02.59-.11.23-.23.37-.39.54-.17.18-.36.41-.51.55-.17.16-.35.34-.15.68.2.33.88 1.45 1.89 2.35 1.3 1.16 2.39 1.52 2.73 1.69.34.17.54.14.74-.08.2-.23.87-1.01 1.1-1.35.23-.34.46-.28.78-.17.32.11 2.04 1.01 2.38 1.18.34.17.57.25.65.39.09.14.09.82-.18 1.58z"/></svg>
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
 
                   {/* Status indicator */}
                   {smsOpened && (
