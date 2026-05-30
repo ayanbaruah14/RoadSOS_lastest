@@ -608,24 +608,28 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         style={{ minHeight: "100vh" }}
       />
 
-      <button
-        onClick={() => {
-
-          if (!mapRef.current || !userPos) return;
-
-          mapRef.current.flyTo(
-            [userPos[0], userPos[1]],
-            16,
-            {
-              duration: 1.5,
-            }
-          );
-
-        }}
-        className="absolute bottom-24 right-4 z-[1000] w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-xl flex items-center justify-center text-2xl"
-      >
-        📍
-      </button>
+<button
+  onClick={() => {
+    if (!mapRef.current || !userPos) return;
+    mapRef.current.flyTo([userPos[0], userPos[1]], 16, { duration: 1.5 });
+  }}
+  className="absolute bottom-24 right-4 z-[1000] w-14 h-14"
+style={{
+  borderRadius: "50%",
+  background: "rgba(34,211,238,0.10)",
+  border: "1px solid rgba(34,211,238,0.22)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  backdropFilter: "blur(24px) saturate(180%)",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.45)",
+}}
+>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+</button>
 
     </div>
   );
