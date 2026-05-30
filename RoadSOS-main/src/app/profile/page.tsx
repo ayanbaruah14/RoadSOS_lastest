@@ -200,6 +200,8 @@ const STYLES = `
 
   /* ── Small inline input ── */
   .sm-input {
+    width: 100%;
+    min-width: 0;
     background: rgba(255,255,255,0.025);
     border: 1px solid var(--border);
     border-radius: 10px;
