@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"; 
+import "leaflet/dist/leaflet.css";
+
+// ─── Shared phone validation util ────────────────────────────────────────────
+export const hasValidPhone = (phone: string[]): boolean =>
+  phone.length > 0 &&
+  phone[0].trim() !== "" &&
+  phone[0] !== "Not Available" &&
+  phone[0] !== "N/A" &&
+  phone[0] !== "—";
 
 // User location icon
 const userIcon = L.divIcon({
@@ -111,25 +119,33 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
       const service = allServicesRef.current.find((s) => s._id === serviceId);
       if (service && onRouteRequest) {
         onRouteRequest(service);
-        // Close any open popup
         mapRef.current?.closePopup();
       }
     };
   }, [onRouteRequest]);
 
-  // Fallback simulated data when API is not available
+  // Fallback simulated data — only real/official emergency numbers; no dummy mobile numbers
   function generateFallback(lat: number, lng: number): ServiceData[] {
-    const items = [
-      { name: "City Trauma Center", type: "hospital" as ServiceType, phone: ["+91 112"], rating: 4.5, availability: "24x7", offset: [0.008, 0.012] },
-      { name: "District General Hospital", type: "hospital" as ServiceType, phone: ["+91 108"], rating: 4.2, availability: "24x7", offset: [-0.005, 0.009] },
-      { name: "Central Police Station", type: "police" as ServiceType, phone: ["100"], rating: 4.0, availability: "24x7", offset: [0.006, -0.008] },
-      { name: "Highway Police Outpost", type: "police" as ServiceType, phone: ["100"], rating: 3.8, availability: "24x7", offset: [-0.01, -0.005] },
-      { name: "Emergency Ambulance", type: "ambulance" as ServiceType, phone: ["108"], rating: 4.7, availability: "24x7", offset: [0.003, 0.006] },
-      { name: "Red Cross Ambulance", type: "ambulance" as ServiceType, phone: ["1099"], rating: 4.4, availability: "24x7", offset: [-0.007, 0.004] },
-      { name: "Highway Towing Service", type: "towing" as ServiceType, phone: ["+91 98765 43210"], rating: 4.1, availability: "24x7", offset: [0.011, -0.003] },
-      { name: "QuickFix Auto Repair", type: "repair" as ServiceType, phone: ["+91 98765 12345"], rating: 4.3, availability: "8AM-10PM", offset: [-0.004, -0.011] },
-      { name: "Tyre Point Puncture Shop", type: "repair" as ServiceType, phone: ["+91 87654 32100"], rating: 3.9, availability: "7AM-9PM", offset: [0.009, 0.003] },
+    const items: {
+      name: string;
+      type: ServiceType;
+      phone: string[];
+      rating: number;
+      availability: string;
+      offset: [number, number];
+    }[] = [
+      { name: "City Trauma Center",        type: "hospital",  phone: ["112"],  rating: 4.5, availability: "24x7",    offset: [0.008,  0.012]  },
+      { name: "District General Hospital", type: "hospital",  phone: ["108"],  rating: 4.2, availability: "24x7",    offset: [-0.005, 0.009]  },
+      { name: "Central Police Station",    type: "police",    phone: ["100"],  rating: 4.0, availability: "24x7",    offset: [0.006, -0.008]  },
+      { name: "Highway Police Outpost",    type: "police",    phone: ["100"],  rating: 3.8, availability: "24x7",    offset: [-0.01, -0.005]  },
+      { name: "Emergency Ambulance",       type: "ambulance", phone: ["108"],  rating: 4.7, availability: "24x7",    offset: [0.003,  0.006]  },
+      { name: "Red Cross Ambulance",       type: "ambulance", phone: ["1099"], rating: 4.4, availability: "24x7",    offset: [-0.007, 0.004]  },
+      // Towing & repair — no real number available in fallback mode
+      { name: "Highway Towing Service",    type: "towing",    phone: [],       rating: 4.1, availability: "24x7",    offset: [0.011, -0.003]  },
+      { name: "QuickFix Auto Repair",      type: "repair",    phone: [],       rating: 4.3, availability: "8AM-10PM",offset: [-0.004,-0.011]  },
+      { name: "Tyre Point Puncture Shop",  type: "repair",    phone: [],       rating: 3.9, availability: "7AM-9PM", offset: [0.009,  0.003]  },
     ];
+
     return items.map((s, i) => ({
       _id: `fallback-${i}`,
       name: s.name,
@@ -333,11 +349,18 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
       const icon = serviceIcons[service.type] || serviceIcons.hospital;
       const color = typeColors[service.type] || "#3b82f6";
       const label = typeLabels[service.type] || service.type;
-      const phoneStr = service.phone.join(", ");
-      const hasPhone = service.phone[0] !== "Not Available";
-
-      // Escape service ID for safe embedding in HTML attribute
+      const phoneValid = hasValidPhone(service.phone);
       const safeId = service._id.replace(/"/g, "&quot;");
+
+      const callButtonHtml = phoneValid
+        ? `<button onclick="window.open('tel:${service.phone[0]}')"
+              style="flex:1;padding:8px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
+              📞 Call
+           </button>`
+        : `<button disabled
+              style="flex:1;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
+              No Phone
+           </button>`;
 
       const marker = L.marker([lat, lng], { icon });
       marker.bindPopup(
@@ -347,22 +370,13 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
           </div>
           <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:6px;line-height:1.3;">${service.name}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.55);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
-            <span>📞 ${phoneStr}</span>
+            ${phoneValid ? `<span>📞 ${service.phone[0]}</span>` : `<span style="color:rgba(255,255,255,0.25);">📞 No phone available</span>`}
             <span>📏 ${service.distance} km away</span>
             <span>⭐ ${service.rating} · ${service.availability}</span>
             ${service.address ? `<span>📍 ${service.address}</span>` : ""}
           </div>
           <div style="display:flex;gap:7px;">
-            ${hasPhone
-              ? `<button onclick="window.open('tel:${service.phone[0]}')"
-                  style="flex:1;padding:8px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">
-                  📞 Call
-                </button>`
-              : `<button disabled
-                  style="flex:1;padding:8px;background:#333;color:#666;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:not-allowed;font-family:inherit;">
-                  No Phone
-                </button>`
-            }
+            ${callButtonHtml}
             <button onclick="window.__roadsos_requestRoute('${safeId}')"
               style="flex:1;padding:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
               🗺️ Directions

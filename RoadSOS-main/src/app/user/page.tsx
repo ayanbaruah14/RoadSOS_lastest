@@ -10,6 +10,7 @@ import ChatbotPanel from "@/components/ChatbotPanel";
 import { getUserProfile, type UserProfile } from "@/lib/profiles";
 import { prefetchEmergencyRoute, isCacheFresh, hasUserMoved } from "@/lib/offlineCache";
 import type { ServiceType, ServiceData, RouteData } from "@/components/Map";
+import { hasValidPhone } from "@/components/Map";
 import { Motion } from "@capacitor/motion";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
@@ -133,7 +134,6 @@ export default function UserPage() {
 
   const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
-  // Shared fetchRoute — called by both sidebar Directions button AND map popup Directions button
   const fetchRoute = useCallback(async (service: ServiceData) => {
     if (!userLocation) return;
     setRouteLoading(service._id);
@@ -384,6 +384,8 @@ export default function UserPage() {
         .up-svc-meta { display:flex; flex-wrap:wrap; gap:6px 10px; font-size:11px; color:var(--text-hint); margin-bottom:6px; }
         .up-svc-addr { font-size:10px; color:rgba(255,255,255,.2); margin-bottom:8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
         .up-svc-btns { display:flex; gap:7px; }
+
+        /* Call button — active state */
         .up-call {
           flex:1; padding:8px; border-radius:10px; border:none; cursor:pointer;
           background:linear-gradient(135deg,#059669,#065f46);
@@ -392,6 +394,16 @@ export default function UserPage() {
           transition:opacity .2s; box-shadow:0 2px 10px rgba(5,150,105,.28);
         }
         .up-call:hover { opacity:.88; }
+
+        /* Call button — disabled/no-phone state */
+        .up-call-disabled {
+          flex:1; padding:8px; border-radius:10px;
+          background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+          color:rgba(255,255,255,.22); font-family:var(--font-display); font-weight:700; font-size:12px;
+          display:flex; align-items:center; justify-content:center;
+          cursor:not-allowed; user-select:none;
+        }
+
         .up-dir {
           flex:1; padding:8px; border-radius:10px; border:1px solid var(--border); cursor:pointer;
           background:rgba(255,255,255,.04); color:var(--text-secondary);
@@ -536,7 +548,7 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* Route fetching toast — shown while loading from map popup click */}
+        {/* Route fetching toast */}
         {routeLoading && !routeData && (
           <div className="up-route-panel">
             <div className="up-route-loading">
@@ -595,6 +607,7 @@ export default function UserPage() {
             <div className="up-sb-list">
               {filtered.map((s) => {
                 const isActive = routeData?.destination.name === s.name;
+                const phoneOk = hasValidPhone(s.phone);
                 return (
                   <div key={s._id} className={`up-svc ${isActive ? "active" : ""}`}>
                     <div className="up-svc-top">
@@ -602,15 +615,25 @@ export default function UserPage() {
                       <span className={`up-svc-badge ${typeColors[s.type] || ""}`}>{s.type}</span>
                     </div>
                     <div className="up-svc-meta">
-                      <span>📞 {s.phone[0]}</span>
+                      {phoneOk
+                        ? <span>📞 {s.phone[0]}</span>
+                        : <span style={{ color:"rgba(255,255,255,0.18)" }}>📞 No phone available</span>
+                      }
                       <span>📏 {s.distance} km</span>
                       <span>⭐ {s.rating}</span>
                     </div>
                     {s.address && <div className="up-svc-addr">📍 {s.address}</div>}
                     <div className="up-svc-btns">
-                      <a href={`tel:${s.phone[0]}`} className="up-call">Call</a>
-                      <button onClick={() => fetchRoute(s)} disabled={routeLoading === s._id}
-                        className={`up-dir ${isActive ? "active" : ""}`}>
+                      {phoneOk ? (
+                        <a href={`tel:${s.phone[0]}`} className="up-call">📞 Call</a>
+                      ) : (
+                        <span className="up-call-disabled">No Phone</span>
+                      )}
+                      <button
+                        onClick={() => fetchRoute(s)}
+                        disabled={routeLoading === s._id}
+                        className={`up-dir ${isActive ? "active" : ""}`}
+                      >
                         {routeLoading === s._id
                           ? <><span className="up-spin" />&nbsp;Loading</>
                           : isActive ? "✓ Active" : "Directions"}
