@@ -98,10 +98,13 @@ export default function UserPage() {
         const x = event.acceleration.x || 0;
         const y = event.acceleration.y || 0;
         const z = event.acceleration.z || 0;
-        const totalAcceleration = Math.sqrt(x * x + y * y + z * z);
+        let totalAcceleration = Math.sqrt(x * x + y * y + z * z);
+        if (totalAcceleration < 1) {
+          totalAcceleration = 0;
+        }
         setAcceleration(totalAcceleration);
         const now = Date.now();
-        if (totalAcceleration > 25 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
+        if (totalAcceleration > 20 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
           setLastCrashTime(now);
           setCrashDetected(true);
           setCountdown(10);
