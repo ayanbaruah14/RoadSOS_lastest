@@ -186,6 +186,8 @@ export default function UserPage() {
         }
         .up-row2 { padding: 8px 12px 0; pointer-events: auto; }
         .up-row3 { padding: 6px 12px 0; pointer-events: auto; }
+        /* telemetry row — right below notice/filters */
+        .up-row4 { padding: 6px 12px 0; pointer-events: auto; }
 
         /* brand */
         .up-brand {
@@ -222,7 +224,7 @@ export default function UserPage() {
         .up-icon-btn:hover { background:rgba(255,255,255,.1); color:var(--text-primary); border-color:rgba(255,255,255,.14); }
         .up-icon-btn.traffic-on { background:rgba(34,211,238,.12); border-color:rgba(34,211,238,.3); color:var(--cyan); }
 
-        /* logout — red pill with label */
+        /* logout */
         .up-logout {
           display:flex; align-items:center; gap:6px;
           height:36px; padding:0 12px; border-radius:11px; cursor:pointer;
@@ -256,49 +258,50 @@ export default function UserPage() {
         }
         .up-notice-x { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; padding:0; margin-left:auto; }
 
-        /* ─── TELEMETRY — bottom-left, sits above SOS pill gap ─── */
+        /* ─── TELEMETRY — inline under notice/filters ─── */
         .up-telem {
-          position:absolute; bottom:86px; left:12px; z-index:999; pointer-events:none;
+          display:inline-flex; align-items:center; gap:8px;
           background:rgba(6,7,15,.82); border:1px solid rgba(255,255,255,.07);
-          border-radius:12px; padding:7px 12px;
+          border-radius:10px; padding:5px 11px;
           backdrop-filter:var(--blur);
           font-family:var(--font-body); font-size:11px; color:var(--text-secondary);
-          display:flex; align-items:center; gap:8px; white-space:nowrap;
+          white-space:nowrap;
         }
         .up-telem-val { color:var(--cyan); font-weight:600; font-family:var(--font-display); }
         .up-telem-sep { width:1px; height:12px; background:rgba(255,255,255,.1); }
 
-        /* ─── CRASH MODAL — centred, never over SOS ─── */
-        .up-crash-bg {
-          position:absolute; inset:0; z-index:8999;
-          background:rgba(0,0,0,.45); backdrop-filter:blur(4px);
-          display:flex; align-items:center; justify-content:center; padding:20px;
-        }
-        .up-crash-card {
-          width:100%; max-width:300px;
-          background:rgba(153,27,27,.96);
-          border:1px solid rgba(239,68,68,.5);
-          border-radius:22px; padding:24px 20px;
-          box-shadow:0 0 0 5px rgba(239,68,68,.1),0 20px 60px rgba(239,68,68,.4);
-          animation:cpulse 1s ease-in-out infinite alternate; text-align:center;
+        /* ─── CRASH COUNTDOWN — renders BELOW the SOS button ─── */
+        .up-crash-badge {
+          display:flex; align-items:center; gap:10px;
+          background:rgba(140,20,20,.95);
+          border:1px solid rgba(239,68,68,.50);
+          border-radius:14px; padding:9px 18px;
+          animation:cpulse 1s ease-in-out infinite alternate;
+          pointer-events:none; white-space:nowrap;
         }
         @keyframes cpulse {
-          from { box-shadow:0 0 0 4px rgba(239,68,68,.1),0 20px 50px rgba(239,68,68,.35); }
-          to   { box-shadow:0 0 0 8px rgba(239,68,68,.07),0 20px 70px rgba(239,68,68,.55); }
+          from { box-shadow:0 0 0 3px rgba(239,68,68,.08),0 6px 24px rgba(239,68,68,.30); }
+          to   { box-shadow:0 0 0 6px rgba(239,68,68,.05),0 6px 32px rgba(239,68,68,.52); }
         }
-        .up-crash-icon  { font-size:34px; margin-bottom:10px; }
-        .up-crash-title { font-family:var(--font-display); font-weight:800; font-size:18px; color:#fff; margin-bottom:6px; }
-        .up-crash-sub   { font-size:13px; color:rgba(255,255,255,.7); margin-bottom:10px; }
-        .up-crash-num   { font-family:var(--font-display); font-weight:800; font-size:48px; color:#fff; line-height:1; margin-bottom:16px; }
-        .up-crash-btn   { width:100%; padding:13px; border:none; border-radius:13px; background:#fff; color:#991b1b; font-family:var(--font-display); font-weight:700; font-size:14px; cursor:pointer; transition:background .2s; }
-        .up-crash-btn:hover { background:#fee2e2; }
-        .up-sos-ok {
-          width:100%; max-width:300px;
-          background:rgba(5,150,105,.92); border:1px solid rgba(16,185,129,.4);
-          border-radius:16px; padding:14px 18px;
-          font-family:var(--font-display); font-weight:600; font-size:14px;
-          color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;
+        .up-crash-label { font-family:var(--font-display); font-weight:600; font-size:12px; color:rgba(255,255,255,.80); letter-spacing:.01em; }
+        .up-crash-num   { font-family:var(--font-display); font-weight:800; font-size:22px; color:#fff; line-height:1; min-width:22px; text-align:center; }
+
+        .up-sos-triggered {
+          display:flex; align-items:center; gap:6px;
+          background:rgba(5,150,105,.88); border:1px solid rgba(16,185,129,.35);
+          border-radius:12px; padding:8px 16px;
+          font-family:var(--font-display); font-weight:600; font-size:13px; color:#fff;
+          pointer-events:none; white-space:nowrap;
         }
+
+        /* cancel button — below SOS button */
+        .up-cancel-btn {
+          padding:8px 24px; border-radius:50px; border:1px solid rgba(239,68,68,.35);
+          background:rgba(239,68,68,.10); color:#f87171;
+          font-family:var(--font-display); font-weight:700; font-size:12px;
+          cursor:pointer; transition:all .2s; white-space:nowrap;
+        }
+        .up-cancel-btn:hover { background:rgba(239,68,68,.20); border-color:rgba(239,68,68,.55); color:#fca5a5; }
 
         /* ─── ROUTE PANEL ─── */
         .up-route-panel {
@@ -340,20 +343,16 @@ export default function UserPage() {
         .up-stat-l { font-size:10px; color:var(--text-hint); margin-top:3px; letter-spacing:.06em; text-transform:uppercase; }
         .up-stat-d { width:1px; height:34px; background:var(--border); margin:0 14px; }
 
+        /* no horizontal scroll anywhere */
+        html, body { overflow-x: hidden; max-width: 100vw; }
+
         /* ─── SOS AREA ─── */
         .up-sos-area {
           position:absolute; left:50%; transform:translateX(-50%);
-          z-index:1000; display:flex; flex-direction:column; align-items:center; gap:6px;
+          z-index:1000; display:flex; flex-direction:column; align-items:center; gap:8px;
           transition:bottom .3s cubic-bezier(.16,1,.3,1);
+          max-width: calc(100vw - 24px);
         }
-        .up-offline-pill {
-          display:flex; align-items:center; gap:5px;
-          font-size:10px; color:rgba(52,211,153,.65);
-          background:rgba(16,185,129,.07); border:1px solid rgba(16,185,129,.15);
-          border-radius:50px; padding:4px 10px;
-          font-family:var(--font-display); font-weight:500;
-        }
-        .up-offline-dot { width:5px; height:5px; border-radius:50%; background:rgba(52,211,153,.65); }
 
         /* ─── SIDEBAR ─── */
         .up-sidebar { position:absolute; top:0; right:0; height:100%; width:296px; z-index:1001; transition:transform .3s cubic-bezier(.16,1,.3,1); }
@@ -410,7 +409,7 @@ export default function UserPage() {
         .up-empty-text { font-size:13px; font-family:var(--font-display); }
       `}</style>
 
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full" style={{ overflowX: "hidden" }}>
         <Map
           activeFilter={activeFilter}
           routeData={routeData}
@@ -476,35 +475,17 @@ export default function UserPage() {
               </div>
             </div>
           )}
-        </div>
 
-        {/* ── TELEMETRY — bottom-left, clear of SOS ── */}
-        <div className="up-telem">
-          <span style={{ opacity:.5 }}>📈</span>
-          Accel: <span className="up-telem-val">{acceleration.toFixed(2)}</span>
-          <div className="up-telem-sep" />
-          Speed: <span className="up-telem-val">{currentSpeed.toFixed(1)} km/h</span>
-        </div>
-
-        {/* ── CRASH MODAL — full-screen dimmed overlay, never overlaps SOS ── */}
-        {(crashDetected || sosTriggered) && (
-          <div className="up-crash-bg">
-            {crashDetected && (
-              <div className="up-crash-card">
-                <div className="up-crash-icon">🚨</div>
-                <div className="up-crash-title">Possible Crash Detected!</div>
-                <div className="up-crash-sub">Sending SOS automatically in</div>
-                <div className="up-crash-num">{countdown}</div>
-                <button onClick={cancelEmergency} className="up-crash-btn">Cancel Emergency</button>
-              </div>
-            )}
-            {sosTriggered && (
-              <div className="up-sos-ok">
-                <span>✅</span> Emergency SOS Triggered
-              </div>
-            )}
+          {/* Row 4 – telemetry, always visible below notice/filters */}
+          <div className="up-row4">
+            <div className="up-telem">
+              <span style={{ opacity:.5 }}>📈</span>
+              Accel: <span className="up-telem-val">{acceleration.toFixed(2)}</span>
+              <div className="up-telem-sep" />
+              Speed: <span className="up-telem-val">{currentSpeed.toFixed(1)} km/h</span>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* ── TRAFFIC PANEL ── */}
         <TrafficPanel
@@ -553,8 +534,9 @@ export default function UserPage() {
           </div>
         )}
 
-        {/* ── SOS BUTTON — clean bottom centre, never obscured ── */}
+        {/* ── SOS AREA — SOS button on top, crash info + cancel below ── */}
         <div className="up-sos-area" style={{ bottom: sosBottom }}>
+
           <SOSButton
             userProfile={userProfile || getUserProfile()}
             userLocation={userLocation}
@@ -565,11 +547,28 @@ export default function UserPage() {
               router.push(`/emergency/${id}?lat=${lat}&lng=${lng}`);
             }}
           />
-          {offlineCached && (
-            <div className="up-offline-pill">
-              <div className="up-offline-dot" />
-              Offline ready
+
+          {/* Crash countdown badge — BELOW the SOS button */}
+          {crashDetected && (
+            <div className="up-crash-badge">
+              <span className="up-crash-label">🚨 Auto SOS in</span>
+              <span className="up-crash-num">{countdown}</span>
+              <span className="up-crash-label">sec</span>
             </div>
+          )}
+
+          {/* SOS triggered confirmation — BELOW the SOS button */}
+          {sosTriggered && (
+            <div className="up-sos-triggered">
+              <span>✅</span> Emergency SOS Triggered
+            </div>
+          )}
+
+          {/* Cancel button — only shown when crash countdown is active */}
+          {(crashDetected || sosTriggered) && (
+            <button onClick={cancelEmergency} className="up-cancel-btn">
+              Cancel Emergency
+            </button>
           )}
         </div>
 
