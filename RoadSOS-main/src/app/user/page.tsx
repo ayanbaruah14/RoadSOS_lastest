@@ -430,9 +430,7 @@ export default function UserPage() {
           {/* Row 1 */}
           <div className="up-row1">
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <Link href="/" className="up-icon-btn">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-              </Link>
+
               <div className="up-brand">
                 <div className="up-brand-badge">SOS</div>
                 <div>
