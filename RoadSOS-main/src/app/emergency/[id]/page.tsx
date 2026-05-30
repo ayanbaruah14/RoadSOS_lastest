@@ -36,7 +36,7 @@ function decodePolyline(encoded: string): [number, number][] {
 
 /* ─── Inline styles injected once ─── */
 const GLOBAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
   :root {
     --bg:        #080810;
@@ -61,7 +61,7 @@ const GLOBAL_STYLES = `
 
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
 
-  .font-display { font-family: 'Syne', sans-serif; }
+  .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
   .font-mono    { font-family: 'Space Mono', monospace; }
 
   /* Glass card */
@@ -177,6 +177,40 @@ const GLOBAL_STYLES = `
   .d4 { animation-delay: .28s; }
   .d5 { animation-delay: .36s; }
   .d6 { animation-delay: .44s; }
+
+  /* Display text sizing — proportionate, never stretches */
+  .display-text {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  /* CTA button text — clamp so it never stretches */
+  .btn-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+    font-size: clamp(12px, 3.2vw, 14px);
+  }
+
+  /* Header badge label */
+  .badge-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(11px, 3vw, 15px);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
 `;
 
 /* ─── Helper: label chip ─── */
@@ -357,7 +391,7 @@ export default function EmergencyPage() {
   const handleFalseAlarm = async () => { await updateAlert({ canSelfReach: true, escalatedToCritical: false, severity: "low", status: "resolved" }); setPhase("done"); };
 
   const timerPct = (timer / 10) * 100;
-  const circumference = 2 * Math.PI * 52; // r=52
+  const circumference = 2 * Math.PI * 52;
 
   // Phase-derived header info
   const headerBadge =
@@ -376,22 +410,22 @@ export default function EmergencyPage() {
 
         {/* ─── HEADER ─── */}
         <header style={{ flexShrink: 0, padding: "16px 16px 14px", borderBottom: "1px solid var(--border)", position: "relative", zIndex: 10 }}>
-          <div className="mp-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="mp-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
               {/* Badge icon */}
               <div style={{ width: 42, height: 42, borderRadius: 13, background: headerBadge.bg, border: `1px solid ${headerBadge.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                 {headerBadge.emoji}
               </div>
-              <div>
-                <div className="font-display" style={{ fontSize: 15, fontWeight: 800, color: headerBadge.labelColor, letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="badge-label" style={{ color: headerBadge.labelColor }}>
                   {headerBadge.label}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
-                  <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "'Space Mono', monospace" }}>
+                  <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "'Space Mono', monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {userProfile?.name || "User"} · #{alertId.slice(-6).toUpperCase()}
                   </span>
                   {gpsActive && phase !== "done" && (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#22d87a" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#22d87a", flexShrink: 0 }}>
                       <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#22d87a", display: "inline-block" }} />
                       LIVE
                     </span>
@@ -401,7 +435,7 @@ export default function EmergencyPage() {
             </div>
 
             {phase === "done" && (
-              <Link href="/user" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, fontWeight: 500, textDecoration: "none", transition: "all .18s" }}>
+              <Link href="/user" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, fontWeight: 500, textDecoration: "none", transition: "all .18s", flexShrink: 0 }}>
                 ← Map
               </Link>
             )}
@@ -415,10 +449,10 @@ export default function EmergencyPage() {
             <div style={{ background: "rgba(34,216,122,0.07)", border: "1px solid rgba(34,216,122,0.20)", borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(34,216,122,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>🚑</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#22d87a", fontFamily: "'Syne', sans-serif" }}>Authorities alerted!</div>
+                <div className="display-text" style={{ fontSize: 13, color: "#22d87a" }}>Authorities alerted!</div>
                 <div style={{ fontSize: 11, color: "rgba(34,216,122,0.6)", marginTop: 2 }}>Emergency services are responding. Stay calm and visible.</div>
               </div>
-              <button onClick={() => setAdminNotification(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(34,216,122,0.4)", fontSize: 16, lineHeight: 1, padding: 4 }}>×</button>
+              <button onClick={() => setAdminNotification(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(34,216,122,0.4)", fontSize: 16, lineHeight: 1, padding: 4, flexShrink: 0 }}>×</button>
             </div>
             </div>
           </div>
@@ -429,7 +463,7 @@ export default function EmergencyPage() {
             <div style={{ background: "rgba(61,139,255,0.07)", border: "1px solid rgba(61,139,255,0.20)", borderRadius: 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(61,139,255,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>✅</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#3d8bff", fontFamily: "'Syne', sans-serif" }}>Emergency Resolved</div>
+                <div className="display-text" style={{ fontSize: 13, color: "#3d8bff" }}>Emergency Resolved</div>
                 <div style={{ fontSize: 11, color: "rgba(61,139,255,0.6)", marginTop: 2 }}>Marked resolved by control room. Stay safe!</div>
               </div>
             </div>
@@ -477,7 +511,7 @@ export default function EmergencyPage() {
                   <span>~{hospital.eta} min ETA</span>
                 </div>
               </div>
-              <a href={`tel:${hospital.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+              <a href={`tel:${hospital.phone}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 10, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
                 Call
               </a>
@@ -498,9 +532,7 @@ export default function EmergencyPage() {
               <div style={{ textAlign: "center" }}>
                 <div style={{ position: "relative", width: 136, height: 136, margin: "0 auto 12px" }}>
                   <svg className={timer <= 3 ? "ring-flash" : ""} width="136" height="136" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
-                    {/* Track */}
                     <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
-                    {/* Progress */}
                     <circle cx="60" cy="60" r="52" fill="none"
                       stroke={timer <= 3 ? "#ff3b3b" : timer <= 6 ? "#ffb830" : "#3d8bff"}
                       strokeWidth="5" strokeLinecap="round"
@@ -508,7 +540,6 @@ export default function EmergencyPage() {
                       style={{ transition: "stroke-dasharray 1s linear, stroke .4s ease" }}
                     />
                   </svg>
-                  {/* Center number */}
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                     <span className="font-mono" style={{ fontSize: 42, fontWeight: 700, color: timer <= 3 ? "#ff3b3b" : timer <= 6 ? "#ffb830" : "var(--text)", lineHeight: 1, letterSpacing: "-2px" }}>
                       {String(timer).padStart(2, "0")}
@@ -520,7 +551,7 @@ export default function EmergencyPage() {
 
               {/* Info card */}
               <div className="mp-card" style={{ padding: "14px 16px", background: "rgba(255,184,48,0.05)", borderColor: "rgba(255,184,48,0.18)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#ffb830", marginBottom: 6, fontFamily: "'Syne', sans-serif" }}>
+                <div className="display-text" style={{ fontSize: 13, color: "#ffb830", marginBottom: 6 }}>
                   Can you reach the hospital yourself?
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.65 }}>
@@ -533,13 +564,13 @@ export default function EmergencyPage() {
 
               {/* CTA */}
               <button onClick={handleCanReach} className="sweep-btn"
-                style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", color: "white", fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", letterSpacing: "0.02em", cursor: "pointer", boxShadow: "0 8px 32px rgba(34,197,94,0.30)", transition: "opacity .18s, transform .12s" }}
+                style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", color: "white", cursor: "pointer", boxShadow: "0 8px 32px rgba(34,197,94,0.30)", transition: "opacity .18s, transform .12s" }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = ".9")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
                 onMouseDown={e => (e.currentTarget.style.transform = "scale(.98)")}
                 onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
               >
-                ✅ &nbsp; I CAN REACH THE HOSPITAL
+                <span className="btn-label">✅ &nbsp; I CAN REACH THE HOSPITAL</span>
               </button>
 
               <p style={{ textAlign: "center", fontSize: 10.5, color: "var(--faint)" }}>
@@ -557,8 +588,8 @@ export default function EmergencyPage() {
                 🚨
               </div>
 
-              <div>
-                <div className="font-display" style={{ fontSize: 22, fontWeight: 800, color: "#ff3b3b", letterSpacing: "-0.03em", marginBottom: 8 }}>
+              <div style={{ width: "100%" }}>
+                <div className="display-text" style={{ fontSize: "clamp(18px, 5.5vw, 22px)", color: "#ff3b3b", marginBottom: 8, textAlign: "center" }}>
                   SITUATION ESCALATED
                 </div>
                 <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 320, margin: "0 auto", lineHeight: 1.7 }}>
@@ -584,12 +615,12 @@ export default function EmergencyPage() {
                 ))}
               </div>
 
-              <div style={{ fontSize: 13, color: "#22d87a", fontWeight: 700, fontFamily: "'Syne', sans-serif" }}>
+              <div className="display-text" style={{ fontSize: 13, color: "#22d87a" }}>
                 Help is on the way — stay visible
               </div>
 
               <button onClick={handleFalseAlarm}
-                style={{ width: "100%", padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all .18s" }}
+                style={{ width: "100%", padding: "12px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all .18s", fontFamily: "'DM Sans', sans-serif" }}
                 onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "var(--text)"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "var(--muted)"; }}
               >
@@ -604,7 +635,7 @@ export default function EmergencyPage() {
 
               {/* Header */}
               <div style={{ textAlign: "center" }}>
-                <div className="font-display" style={{ fontSize: 20, fontWeight: 800, color: "#3d8bff", letterSpacing: "-0.03em", marginBottom: 4 }}>
+                <div className="display-text" style={{ fontSize: "clamp(17px, 5vw, 20px)", color: "#3d8bff", marginBottom: 4 }}>
                   Quick Assessment
                 </div>
                 <p style={{ fontSize: 12, color: "var(--muted)" }}>Takes 20 seconds · helps responders prepare</p>
@@ -699,15 +730,15 @@ export default function EmergencyPage() {
 
               {/* Submit */}
               <button onClick={handleSubmitSurvey} disabled={submitting} className="sweep-btn-blue"
-                style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", color: "white", fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", letterSpacing: "0.02em", cursor: "pointer", boxShadow: "0 8px 32px rgba(37,99,235,0.28)", opacity: submitting ? 0.6 : 1, transition: "opacity .18s, transform .12s" }}
+                style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", color: "white", cursor: "pointer", boxShadow: "0 8px 32px rgba(37,99,235,0.28)", opacity: submitting ? 0.6 : 1, transition: "opacity .18s, transform .12s" }}
                 onMouseDown={e => (e.currentTarget.style.transform = "scale(.99)")}
                 onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")}
               >
-                {submitting ? "Sending…" : "Submit & Navigate to Hospital →"}
+                <span className="btn-label">{submitting ? "Sending…" : "Submit & Navigate to Hospital →"}</span>
               </button>
 
               <button onClick={() => setPhase("done")}
-                style={{ background: "none", border: "none", color: "var(--faint)", fontSize: 12, cursor: "pointer", padding: "4px 0", textAlign: "center" }}>
+                style={{ background: "none", border: "none", color: "var(--faint)", fontSize: 12, cursor: "pointer", padding: "4px 0", textAlign: "center", fontFamily: "'DM Sans', sans-serif" }}>
                 Skip survey
               </button>
             </div>
@@ -721,8 +752,8 @@ export default function EmergencyPage() {
                 ✅
               </div>
 
-              <div>
-                <div className="font-display" style={{ fontSize: 20, fontWeight: 800, color: "#22d87a", letterSpacing: "-0.03em", marginBottom: 5 }}>
+              <div style={{ width: "100%" }}>
+                <div className="display-text" style={{ fontSize: "clamp(17px, 5vw, 20px)", color: "#22d87a", marginBottom: 5, textAlign: "center" }}>
                   Information Sent
                 </div>
                 <p style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.65 }}>
@@ -733,8 +764,8 @@ export default function EmergencyPage() {
               {hospital && (
                 <a href={`https://www.google.com/maps/dir/${userLat},${userLng}/${hospital.lat},${hospital.lng}`}
                   target="_blank" rel="noopener noreferrer" className="sweep-btn-blue"
-                  style={{ display: "block", width: "100%", padding: "14px", borderRadius: 13, color: "white", fontSize: 14, fontWeight: 800, fontFamily: "'Syne', sans-serif", textDecoration: "none", boxShadow: "0 8px 32px rgba(37,99,235,0.28)" }}>
-                  🗺️ &nbsp;Navigate to {hospital.name}
+                  style={{ display: "block", width: "100%", padding: "14px", borderRadius: 13, color: "white", textDecoration: "none", boxShadow: "0 8px 32px rgba(37,99,235,0.28)" }}>
+                  <span className="btn-label">🗺️ &nbsp;Navigate to {hospital.name}</span>
                 </a>
               )}
 
