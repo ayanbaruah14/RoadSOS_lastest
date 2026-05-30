@@ -227,9 +227,9 @@ export default function UserPage() {
   border-color: rgba(255,255,255,.14);
 }
 
-.up-icon-btn.traffic-on svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
-.up-icon-btn.traffic-on svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
-.up-icon-btn.traffic-on svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
+.up-icon-btn svg circle:nth-child(1) { fill: #34d399; stroke: #34d399; }
+.up-icon-btn svg circle:nth-child(2) { fill: #fbbf24; stroke: #fbbf24; }
+.up-icon-btn svg circle:nth-child(3) { fill: #f87171; stroke: #f87171; }
 
         /* logout */
         .up-logout {
