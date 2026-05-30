@@ -4,12 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import type L_Type from "leaflet";
 
 // ─── Shared phone validation util ────────────────────────────────────────────
-export const hasValidPhone = (phone: string[]): boolean =>
-  phone.length > 0 &&
-  phone[0].trim() !== "" &&
-  phone[0] !== "Not Available" &&
-  phone[0] !== "N/A" &&
-  phone[0] !== "—";
+export const hasValidPhone = (phone: string[]): boolean => {
+  if (phone.length === 0) return false;
+  const val = phone[0].trim().toLowerCase();
+  return (
+    val !== "" &&
+    val !== "not available" &&
+    val !== "not avail" &&
+    val !== "n/a" &&
+    val !== "na" &&
+    val !== "none" &&
+    val !== "—" &&
+    val !== "-" &&
+    val !== "no phone" &&
+    val !== "no phone available"
+  );
+};
 
 // Lazy-initialized icons (only created once, on the client)
 let L: typeof L_Type | null = null;
@@ -395,8 +405,8 @@ useEffect(() => {
         <div style="display:flex;gap:7px;">
           ${callButtonHtml}
           <button onclick="window.__roadsos_requestRoute('${safeId}')"
-            style="flex:1;padding:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
-            🗺️ Directions
+            style="flex:1;padding:8px;background:rgba(59,130,246,0.10);color:#60a5fa;border:1px solid rgba(59,130,246,0.30);border-radius:9px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;">
+            📌 Directions
           </button>
         </div>
       </div>`,

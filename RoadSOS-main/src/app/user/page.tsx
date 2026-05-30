@@ -405,12 +405,12 @@ export default function UserPage() {
         }
 
         .up-dir {
-          flex:1; padding:8px; border-radius:10px; border:1px solid var(--border); cursor:pointer;
-          background:rgba(255,255,255,.04); color:var(--text-secondary);
+          flex:1; padding:8px; border-radius:10px; border:1px solid rgba(59,130,246,.30); cursor:pointer;
+          background:rgba(59,130,246,.10); color:#60a5fa;
           font-family:var(--font-display); font-weight:600; font-size:12px;
           transition:all .2s; display:flex; align-items:center; justify-content:center; gap:4px;
         }
-        .up-dir:hover { background:rgba(255,255,255,.08); color:var(--text-primary); }
+        .up-dir:hover { background:rgba(59,130,246,.18); color:#93c5fd; border-color:rgba(59,130,246,.45); }
         .up-dir.active { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.3); color:#60a5fa; }
         .up-dir:disabled { opacity:.4; cursor:not-allowed; }
         .up-spin { width:11px; height:11px; border-radius:50%; border:1.5px solid rgba(255,255,255,.3); border-top-color:#fff; animation:spin .7s linear infinite; display:inline-block; }
