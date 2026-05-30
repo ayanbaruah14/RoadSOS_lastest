@@ -247,6 +247,7 @@ export default function EmergencyPage() {
   const [routePoints, setRoutePoints] = useState<[number, number][]>([]);
   const [alertStatus, setAlertStatus] = useState<string>("active");
   const [adminNotification, setAdminNotification] = useState<string | null>(null);
+  const [smsOpened, setSmsOpened] = useState(false);
 
   const userProfile = typeof window !== "undefined" ? getUserProfile() : null;
 
@@ -384,6 +385,55 @@ export default function EmergencyPage() {
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [phase, updateAlert]);
+
+  /* ─── SMS deep-link builder ─── */
+  const buildSmsUri = useCallback((isEscalated = false) => {
+    if (!userProfile) return null;
+    const contacts = userProfile.emergencyContacts || [];
+    if (contacts.length === 0) return null;
+
+    const phones = contacts.map((c) => c.phone.replace(/\s+/g, "")).join(",");
+    const mapsLink = `https://maps.google.com/?q=${userLat},${userLng}`;
+    const hospitalLine = hospital ? `Hospital: ${hospital.name} (${hospital.distance} km away)` : "";
+
+    const body = isEscalated
+      ? `🚨 CRITICAL ESCALATION — RoadSOS\n\n` +
+        `${userProfile.name} may be in a road emergency and could not confirm they can reach the hospital.\n\n` +
+        `📞 Phone: ${userProfile.phone}\n` +
+        `🩸 Blood Group: ${userProfile.bloodGroup || "Unknown"}\n\n` +
+        `📍 Live Location:\n${mapsLink}\n\n` +
+        (hospitalLine ? `🏥 ${hospitalLine}\n\n` : "") +
+        `Please check on them immediately.`
+      : `🆘 Emergency Alert — RoadSOS\n\n` +
+        `${userProfile.name} has triggered an SOS and may need help.\n\n` +
+        `📞 Phone: ${userProfile.phone}\n` +
+        `🩸 Blood Group: ${userProfile.bloodGroup || "Unknown"}\n\n` +
+        `📍 Live Location:\n${mapsLink}\n\n` +
+        (hospitalLine ? `🏥 ${hospitalLine}\n\n` : "") +
+        `Please check on them.`;
+
+    // iOS uses & separator, Android/others use ?
+    const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const sep = isIOS ? "&" : "?";
+    return `sms:${phones}${sep}body=${encodeURIComponent(body)}`;
+  }, [userProfile, userLat, userLng, hospital]);
+
+  /* ─── Auto-open SMS on escalation ─── */
+  useEffect(() => {
+    if (phase !== "escalated" || smsOpened) return;
+    const uri = buildSmsUri(true);
+    if (!uri) return;
+    // Small delay so the escalation UI renders first
+    const timeout = setTimeout(() => {
+      try {
+        window.location.href = uri;
+        setSmsOpened(true);
+      } catch {
+        // Auto-open blocked — user can tap the manual button
+      }
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [phase, smsOpened, buildSmsUri]);
 
   const handleCanReach = () => { if (timerRef.current) clearInterval(timerRef.current); setPhase("survey"); updateAlert({ canSelfReach: true, severity: "high" }); };
 
@@ -581,11 +631,78 @@ export default function EmergencyPage() {
               <p style={{ textAlign: "center", fontSize: 10.5, color: "var(--faint)" }}>
                 Tap only if you can safely drive or walk to the hospital
               </p>
+
+              {/* ── SMS Card (Timer Phase) ── */}
+              {(() => {
+                const emergencyContacts = userProfile?.emergencyContacts || [];
+                const smsUri = buildSmsUri(false);
+                return emergencyContacts.length > 0 ? (
+                  <div className="mp-card fade-up d4" style={{ width: "100%", padding: "14px 16px", textAlign: "left", borderColor: "rgba(255,184,48,0.18)", background: "rgba(255,184,48,0.04)", display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Card header */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg, #ffb830, #e69500)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, boxShadow: "0 4px 14px rgba(255,184,48,0.25)" }}>📩</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="display-text" style={{ fontSize: 12, color: "#ffb830" }}>Alert Emergency Contacts</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>Tap to notify contacts via SMS</div>
+                      </div>
+                    </div>
+
+                    {/* Recipients */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {emergencyContacts.map((c, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)" }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#ffb830", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 11, color: "var(--text)", fontWeight: 500 }}>{c.name}</span>
+                            <span style={{ fontSize: 9, color: "var(--muted)", marginLeft: 6 }}>{c.relation}</span>
+                          </div>
+                          <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 7, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", textDecoration: "none", flexShrink: 0, transition: "all .18s" }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d87a" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA */}
+                    {smsUri && (
+                      <a
+                        href={smsUri}
+                        onClick={() => setSmsOpened(true)}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%", padding: "11px", borderRadius: 10, background: "linear-gradient(135deg, #ffb830, #e69500)", border: "none", color: "#1a1a1a", fontSize: 12, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 24px rgba(255,184,48,0.28)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        {smsOpened ? "Re-open SMS App" : "Send SMS to Contacts"}
+                      </a>
+                    )}
+
+                    {smsOpened && (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, fontSize: 10, color: "#22d87a", fontWeight: 600 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22d87a", display: "inline-block" }} />
+                        SMS app opened ✓
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mp-card fade-up d4" style={{ width: "100%", padding: "12px 14px", textAlign: "left", borderColor: "rgba(255,184,48,0.18)", background: "rgba(255,184,48,0.04)", display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>⚠️</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: "#ffb830", fontWeight: 700 }}>No Emergency Contacts</div>
+                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 1 }}>Add contacts in your profile to send SMS alerts.</div>
+                    </div>
+                    <Link href="/profile" style={{ padding: "5px 10px", borderRadius: 7, background: "rgba(255,184,48,0.12)", border: "1px solid rgba(255,184,48,0.25)", color: "#ffb830", fontSize: 10, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      Add →
+                    </Link>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* ══ ESCALATED PHASE ══ */}
-          {phase === "escalated" && (
+          {phase === "escalated" && (() => {
+            const emergencyContacts = userProfile?.emergencyContacts || [];
+            const smsUri = buildSmsUri(true);
+            return (
             <div className="scale-in" style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", textAlign: "center" }}>
 
               {/* Icon */}
@@ -609,7 +726,7 @@ export default function EmergencyPage() {
                   { icon: "✓", label: "Admin control room alerted", color: "#22d87a", done: true },
                   { icon: "✓", label: "Location shared with responders", color: "#22d87a", done: true },
                   { icon: "✓", label: "Nearest hospital notified", color: "#22d87a", done: true },
-                  { icon: "⋯", label: "Emergency contacts being notified", color: "#ffb830", done: false },
+                  { icon: smsOpened ? "✓" : "⋯", label: smsOpened ? "SMS app opened — send the message" : "Emergency contacts — send SMS below", color: smsOpened ? "#22d87a" : "#ffb830", done: smsOpened },
                 ].map((item, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 22, height: 22, borderRadius: 7, background: item.done ? "rgba(34,216,122,0.12)" : "rgba(255,184,48,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: item.color, fontWeight: 700, flexShrink: 0 }}>
@@ -619,6 +736,70 @@ export default function EmergencyPage() {
                   </div>
                 ))}
               </div>
+
+              {/* ── SMS Card ── */}
+              {emergencyContacts.length > 0 ? (
+                <div className="mp-card fade-up d3" style={{ width: "100%", padding: "16px", textAlign: "left", borderColor: "rgba(255,59,59,0.22)", background: "rgba(255,59,59,0.05)", display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* Card header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff3b3b, #b91c1c)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0, boxShadow: "0 4px 16px rgba(255,59,59,0.3)" }}>📩</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="display-text" style={{ fontSize: 13, color: "#ff5f5f" }}>Send Emergency SMS</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>One tap — opens your messaging app</div>
+                    </div>
+                  </div>
+
+                  {/* Recipients list */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 10, color: "var(--faint)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>Recipients</div>
+                    {emergencyContacts.map((c, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 8, background: "rgba(255,255,255,0.03)" }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 7, background: "rgba(255,59,59,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#ff5f5f", fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0).toUpperCase()}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          <div style={{ fontSize: 10, color: "var(--muted)" }}>{c.relation} · {c.phone}</div>
+                        </div>
+                        <a href={`tel:${c.phone.replace(/\s+/g, "")}`} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, background: "rgba(34,216,122,0.12)", border: "1px solid rgba(34,216,122,0.25)", color: "#22d87a", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0, transition: "all .18s" }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L9.91 10a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+                          Call
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA button */}
+                  {smsUri && (
+                    <a
+                      href={smsUri}
+                      onClick={() => setSmsOpened(true)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "14px", borderRadius: 12, background: "linear-gradient(135deg, #ff3b3b, #cc0000)", border: "none", color: "white", fontSize: 14, fontWeight: 800, fontFamily: "'Plus Jakarta Sans', sans-serif", textDecoration: "none", cursor: "pointer", boxShadow: "0 8px 32px rgba(255,59,59,0.35)", transition: "opacity .18s, transform .12s", textAlign: "center" }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      {smsOpened ? "Re-open SMS App" : "📩 Send SMS to Emergency Contacts"}
+                    </a>
+                  )}
+
+                  {/* Status indicator */}
+                  {smsOpened && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "6px 0", fontSize: 11, color: "#22d87a", fontWeight: 600 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22d87a", display: "inline-block" }} />
+                      SMS app opened — tap Send in your messaging app
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* No emergency contacts warning */
+                <div className="mp-card fade-up d3" style={{ width: "100%", padding: "14px 16px", textAlign: "left", borderColor: "rgba(255,184,48,0.22)", background: "rgba(255,184,48,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>⚠️</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="display-text" style={{ fontSize: 12, color: "#ffb830" }}>No Emergency Contacts</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>Add contacts in your profile to send emergency SMS.</div>
+                  </div>
+                  <Link href="/profile" style={{ padding: "7px 12px", borderRadius: 8, background: "rgba(255,184,48,0.12)", border: "1px solid rgba(255,184,48,0.25)", color: "#ffb830", fontSize: 11, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    Add →
+                  </Link>
+                </div>
+              )}
 
               <div className="display-text" style={{ fontSize: 13, color: "#22d87a" }}>
                 Help is on the way — stay visible
@@ -632,7 +813,8 @@ export default function EmergencyPage() {
                 I&apos;m OK — Cancel Escalation
               </button>
             </div>
-          )}
+            );
+          })()}
 
           {/* ══ SURVEY PHASE ══ */}
           {phase === "survey" && (
