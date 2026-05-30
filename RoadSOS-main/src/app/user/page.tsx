@@ -28,38 +28,33 @@ function decodePolyline(encoded: string): [number, number][] {
   return points;
 }
 
-const categories: {
-  id: ServiceType | "all";
-  label: string;
-  icon: string;
-  color: string;
-}[] = [
-  { id: "all", label: "All", icon: "🗺️", color: "from-slate-500 to-slate-700" },
-  { id: "hospital", label: "Hospitals", icon: "🏥", color: "from-red-500 to-red-700" },
-  { id: "police", label: "Police", icon: "👮", color: "from-blue-500 to-blue-700" },
+const categories: { id: ServiceType | "all"; label: string; icon: string; color: string; }[] = [
+  { id: "all",       label: "All",       icon: "🗺️", color: "from-slate-500 to-slate-700" },
+  { id: "hospital",  label: "Hospitals", icon: "🏥", color: "from-red-500 to-red-700" },
+  { id: "police",    label: "Police",    icon: "👮", color: "from-blue-500 to-blue-700" },
   { id: "ambulance", label: "Ambulance", icon: "🚑", color: "from-emerald-500 to-emerald-700" },
-  { id: "towing", label: "Towing", icon: "🚗", color: "from-amber-500 to-amber-700" },
-  { id: "repair", label: "Repair", icon: "🔧", color: "from-violet-500 to-violet-700" },
+  { id: "towing",    label: "Towing",    icon: "🚗", color: "from-amber-500 to-amber-700" },
+  { id: "repair",    label: "Repair",    icon: "🔧", color: "from-violet-500 to-violet-700" },
 ];
 
 const typeColors: Record<string, string> = {
-  hospital: "bg-red-500/20 text-red-400 border-red-500/30",
-  police: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  hospital:  "bg-red-500/20 text-red-400 border-red-500/30",
+  police:    "bg-blue-500/20 text-blue-400 border-blue-500/30",
   ambulance: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  towing: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  repair: "bg-violet-500/20 text-violet-400 border-violet-500/30",
-  showroom: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+  towing:    "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  repair:    "bg-violet-500/20 text-violet-400 border-violet-500/30",
+  showroom:  "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
 };
 
 export default function UserPage() {
   const router = useRouter();
   const handleLogout = () => {
-  localStorage.removeItem("roadsos_auth");
-  localStorage.removeItem("roadsos_token");
-  localStorage.removeItem("roadsos_user_profile");
+    localStorage.removeItem("roadsos_auth");
+    localStorage.removeItem("roadsos_token");
+    localStorage.removeItem("roadsos_user_profile");
+    router.replace("/signup");
+  };
 
-  router.replace("/signup");
-};
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [activeFilter, setActiveFilter] = useState<ServiceType | "all">("all");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,12 +62,7 @@ export default function UserPage() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [dbNotice, setDbNotice] = useState<string | null>(null);
   const [offlineCached, setOfflineCached] = useState(false);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-
-  // Route state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   const [routeLoading, setRouteLoading] = useState<string | null>(null);
   const [acceleration, setAcceleration] = useState(0);
@@ -82,550 +72,556 @@ export default function UserPage() {
   const [lastCrashTime, setLastCrashTime] = useState(0);
   const [sosTriggered, setSosTriggered] = useState(false);
 
-  useEffect(() => {
-    setUserProfile(getUserProfile());
-  }, []);
-
-  // Auth guard: redirect to signup if not authenticated
-useEffect(() => {
-  const auth = localStorage.getItem("roadsos_auth");
-
-  if (!auth) {
-    router.replace("/signup");
-  }
-}, [router]);
+  useEffect(() => { setUserProfile(getUserProfile()); }, []);
 
   useEffect(() => {
+    const auth = localStorage.getItem("roadsos_auth");
+    if (!auth) router.replace("/signup");
+  }, [router]);
 
+  useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
-
       (pos) => {
-
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        setUserLocation({ lat, lng });
-
-        const speedKmph = (pos.coords.speed || 0) * 3.6;
-
-        setCurrentSpeed(speedKmph);
-
-        console.log("[GPS] Speed:", speedKmph);
-
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setCurrentSpeed((pos.coords.speed || 0) * 3.6);
       },
-
-      (err) => {
-        console.error("[GPS] Error:", err);
-      },
-
-      {
-        enableHighAccuracy: true,
-        maximumAge: 3000,
-        timeout: 10000,
-      }
-
+      (err) => console.error("[GPS] Error:", err),
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
     );
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-    };
-
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   useEffect(() => {
-
     let accelListener: any;
-
     const startMotionDetection = async () => {
-
       accelListener = await Motion.addListener("accel", (event) => {
-
         const x = event.acceleration.x || 0;
         const y = event.acceleration.y || 0;
         const z = event.acceleration.z || 0;
-
-        const totalAcceleration = Math.sqrt(
-          x * x + y * y + z * z
-        );
-
+        const totalAcceleration = Math.sqrt(x * x + y * y + z * z);
         setAcceleration(totalAcceleration);
-
-        console.log(
-          "[Motion]",
-          "Acceleration:",
-          totalAcceleration.toFixed(2),
-          "Speed:",
-          currentSpeed.toFixed(2)
-        );
-
-        // Crash threshold
         const now = Date.now();
-
-        if (
-          totalAcceleration > 15 &&
-          currentSpeed > 20 &&
-          !sosTriggered &&
-          !crashDetected &&
-          now - lastCrashTime > 30000
-        ) {
+        if (totalAcceleration > 15 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
           setLastCrashTime(now);
-
-          console.log(
-            "[Crash Detection] Possible high-speed collision detected"
-          );
-
           setCrashDetected(true);
-
           setCountdown(10);
         }
       });
     };
-
     startMotionDetection();
-
-    return () => {
-      accelListener?.remove();
-    };
-
+    return () => { accelListener?.remove(); };
   }, [currentSpeed, sosTriggered, lastCrashTime, crashDetected]);
 
   useEffect(() => {
-
     if (countdown === null) return;
-
-    if (countdown <= 0) {
-
-      setSosTriggered(true);
-
-      setCrashDetected(false);
-
-      setCountdown(null);
-
-      console.log("🚨 SOS TRIGGERED");
-
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setCountdown((prev) => (prev !== null ? prev - 1 : null));
-    }, 1000);
-
+    if (countdown <= 0) { setSosTriggered(true); setCrashDetected(false); setCountdown(null); return; }
+    const timer = setTimeout(() => setCountdown((prev) => (prev !== null ? prev - 1 : null)), 1000);
     return () => clearTimeout(timer);
+  }, [countdown]);
 
-  }, [countdown]); 
-
-  // Background pre-fetch emergency route for offline use
   useEffect(() => {
     if (!userLocation) return;
-
-    // Check if we already have a fresh cache for this location
-    if (isCacheFresh() && !hasUserMoved(userLocation.lat, userLocation.lng)) {
-      setOfflineCached(true);
-      return;
-    }
-
-    // Pre-fetch in background (delay 3s to not block initial load)
+    if (isCacheFresh() && !hasUserMoved(userLocation.lat, userLocation.lng)) { setOfflineCached(true); return; }
     const timer = setTimeout(async () => {
       const result = await prefetchEmergencyRoute(userLocation.lat, userLocation.lng);
       if (result) setOfflineCached(true);
     }, 3000);
-
     return () => clearTimeout(timer);
   }, [userLocation]);
 
-  const filtered =
-    activeFilter === "all"
-      ? services
-      : services.filter((s) => s.type === activeFilter);
+  const filtered = activeFilter === "all" ? services : services.filter((s) => s.type === activeFilter);
 
-  // Fetch route from OSRM
   const fetchRoute = useCallback(async (service: ServiceData) => {
     if (!userLocation) return;
     setRouteLoading(service._id);
-
     const [destLng, destLat] = service.location.coordinates;
-
     try {
-      const res = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destLng},${destLat}?overview=full&geometries=polyline&steps=true`
-      );
-
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destLng},${destLat}?overview=full&geometries=polyline&steps=true`);
       if (res.ok) {
         const data = await res.json();
         if (data.code === "Ok" && data.routes?.length) {
           const route = data.routes[0];
-          const points = decodePolyline(route.geometry);
-
-          setRouteData({
-            points,
-            distance: route.distance,
-            duration: route.duration,
-            destination: {
-              name: service.name,
-              lat: destLat,
-              lng: destLng,
-              type: service.type,
-            },
-          });
+          setRouteData({ points: decodePolyline(route.geometry), distance: route.distance, duration: route.duration, destination: { name: service.name, lat: destLat, lng: destLng, type: service.type } });
           setSidebarOpen(false);
         }
       }
-    } catch (err) {
-      console.error("Failed to fetch route:", err);
-    } finally {
-      setRouteLoading(null);
-    }
+    } catch (err) { console.error("Failed to fetch route:", err); }
+    finally { setRouteLoading(null); }
   }, [userLocation]);
 
   const clearRoute = () => setRouteData(null);
-  const cancelEmergency = () => {
+  const cancelEmergency = () => { setCrashDetected(false); setCountdown(null); setSosTriggered(false); };
 
-    setCrashDetected(false);
-
-    setCountdown(null);
-
-    setSosTriggered(false);
-
-    console.log("Emergency cancelled");
-  };
+  const sosBottom = routeData ? 188 : 32;
 
   return (
-    <div className="relative h-full w-full">
-      <Map
-        activeFilter={activeFilter}
-        routeData={routeData}
-        onServicesLoaded={(s) => setServices(s)}
-        onLocationReady={(lat, lng) => setUserLocation({ lat, lng })}
-        onError={(msg) => setDbNotice(msg)}
-      />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
-      {/* Crash Detection Overlay */}
-      <div className="absolute top-24 left-4 z-[9999] flex flex-col gap-3">
+        :root {
+          --surface: rgba(10,12,22,0.94);
+          --surface2: rgba(14,17,30,0.90);
+          --border: rgba(255,255,255,0.08);
+          --violet: #8b5cf6;
+          --cyan: #22d3ee;
+          --text-primary: rgba(255,255,255,0.92);
+          --text-secondary: rgba(255,255,255,0.50);
+          --text-hint: rgba(255,255,255,0.25);
+          --font-display: 'Plus Jakarta Sans', sans-serif;
+          --font-body: 'DM Sans', sans-serif;
+          --blur: blur(24px) saturate(180%);
+          --shadow: 0 4px 20px rgba(0,0,0,0.45);
+        }
 
-        <div className="bg-black/70 border border-white/10 rounded-xl px-4 py-2 text-white text-sm backdrop-blur">
-          📈 Acceleration: {acceleration.toFixed(2)}
-          <br />
-          Speed: {currentSpeed.toFixed(1)} km/h
-        </div>
+        /* ─── HEADER ─── */
+        .up-header {
+          position: absolute; top: 0; left: 0; right: 0;
+          z-index: 1000; pointer-events: none;
+          display: flex; flex-direction: column; gap: 0;
+        }
+        .up-row1 {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 12px 12px 0; pointer-events: auto;
+        }
+        .up-row2 { padding: 8px 12px 0; pointer-events: auto; }
+        .up-row3 { padding: 6px 12px 0; pointer-events: auto; }
 
-        {crashDetected && (
-          <div className="bg-red-600 text-white px-5 py-4 rounded-2xl shadow-2xl border border-red-300 flex flex-col gap-3 min-w-[260px]">
+        /* brand */
+        .up-brand {
+          display: flex; align-items: center; gap: 10px;
+          background: var(--surface); border: 1px solid var(--border);
+          border-radius: 14px; padding: 7px 14px 7px 8px;
+          backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+          box-shadow: var(--shadow); position: relative; overflow: hidden;
+        }
+        .up-brand::before {
+          content:''; position:absolute; top:0; left:0; right:0; height:1px;
+          background: linear-gradient(90deg,transparent,rgba(139,92,246,.55),rgba(34,211,238,.4),transparent);
+        }
+        .up-brand-badge {
+          width:32px; height:32px; border-radius:10px; flex-shrink:0;
+          background:linear-gradient(135deg,#ef4444,#b91c1c);
+          display:flex; align-items:center; justify-content:center;
+          font-family:var(--font-display); font-weight:800; font-size:10px;
+          color:#fff; letter-spacing:.06em; box-shadow:0 0 14px rgba(239,68,68,.45);
+        }
+        .up-brand-name { font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--text-primary); letter-spacing:-.01em; line-height:1; }
+        .up-brand-sub  { font-size:10px; color:var(--text-hint); margin-top:2px; font-family:var(--font-body); }
 
-            <div className="text-lg font-bold animate-pulse">
-              🚨 Possible Crash Detected!
-            </div>
+        /* actions */
+        .up-actions { display:flex; align-items:center; gap:6px; }
+        .up-icon-btn {
+          width:36px; height:36px; border-radius:11px;
+          background:var(--surface); border:1px solid var(--border);
+          backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+          display:flex; align-items:center; justify-content:center;
+          color:var(--text-secondary); cursor:pointer; transition:all .2s;
+          text-decoration:none; box-shadow:var(--shadow);
+        }
+        .up-icon-btn:hover { background:rgba(255,255,255,.1); color:var(--text-primary); border-color:rgba(255,255,255,.14); }
+        .up-icon-btn.traffic-on { background:rgba(34,211,238,.12); border-color:rgba(34,211,238,.3); color:var(--cyan); }
 
-            <div className="text-sm text-red-100">
-              Sending SOS in {countdown} seconds...
-            </div>
+        /* logout — red pill with label */
+        .up-logout {
+          display:flex; align-items:center; gap:6px;
+          height:36px; padding:0 12px; border-radius:11px; cursor:pointer;
+          background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.28);
+          backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+          color:#f87171; font-family:var(--font-display); font-size:12px; font-weight:700;
+          transition:all .2s; box-shadow:var(--shadow); white-space:nowrap;
+        }
+        .up-logout:hover { background:rgba(239,68,68,.2); border-color:rgba(239,68,68,.45); color:#fca5a5; }
 
-            <button
-              onClick={cancelEmergency}
-              className="bg-white text-red-600 font-bold px-4 py-2 rounded-xl hover:bg-red-100 transition-all"
-            >
-              Cancel Emergency
-            </button>
+        /* filters */
+        .up-filters { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+        .up-filters::-webkit-scrollbar { display:none; }
+        .up-filter-btn {
+          display:flex; align-items:center; gap:5px;
+          padding:6px 12px; border-radius:50px; white-space:nowrap;
+          font-family:var(--font-display); font-size:11px; font-weight:600;
+          border:1px solid var(--border); cursor:pointer; transition:all .2s;
+          background:var(--surface); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+          color:var(--text-secondary); box-shadow:0 2px 8px rgba(0,0,0,.3);
+        }
+        .up-filter-btn:hover { color:var(--text-primary); border-color:rgba(255,255,255,.14); }
+        .up-filter-btn.active { color:#fff; border-color:transparent; box-shadow:0 3px 14px rgba(0,0,0,.4); }
 
-          </div>
-        )}
+        /* db notice */
+        .up-notice {
+          display:flex; align-items:center; gap:8px;
+          background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.22);
+          border-radius:12px; padding:8px 12px;
+          color:#fbbf24; font-size:12px; backdrop-filter:var(--blur);
+        }
+        .up-notice-x { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:14px; padding:0; margin-left:auto; }
 
-        {sosTriggered && (
-          <div className="bg-green-600 text-white px-5 py-4 rounded-2xl shadow-2xl border border-green-300">
-            ✅ Emergency SOS Triggered
-          </div>
-        )}
+        /* ─── TELEMETRY — bottom-left, sits above SOS pill gap ─── */
+        .up-telem {
+          position:absolute; bottom:86px; left:12px; z-index:999; pointer-events:none;
+          background:rgba(6,7,15,.82); border:1px solid rgba(255,255,255,.07);
+          border-radius:12px; padding:7px 12px;
+          backdrop-filter:var(--blur);
+          font-family:var(--font-body); font-size:11px; color:var(--text-secondary);
+          display:flex; align-items:center; gap:8px; white-space:nowrap;
+        }
+        .up-telem-val { color:var(--cyan); font-weight:600; font-family:var(--font-display); }
+        .up-telem-sep { width:1px; height:12px; background:rgba(255,255,255,.1); }
 
-      </div>
+        /* ─── CRASH MODAL — centred, never over SOS ─── */
+        .up-crash-bg {
+          position:absolute; inset:0; z-index:8999;
+          background:rgba(0,0,0,.45); backdrop-filter:blur(4px);
+          display:flex; align-items:center; justify-content:center; padding:20px;
+        }
+        .up-crash-card {
+          width:100%; max-width:300px;
+          background:rgba(153,27,27,.96);
+          border:1px solid rgba(239,68,68,.5);
+          border-radius:22px; padding:24px 20px;
+          box-shadow:0 0 0 5px rgba(239,68,68,.1),0 20px 60px rgba(239,68,68,.4);
+          animation:cpulse 1s ease-in-out infinite alternate; text-align:center;
+        }
+        @keyframes cpulse {
+          from { box-shadow:0 0 0 4px rgba(239,68,68,.1),0 20px 50px rgba(239,68,68,.35); }
+          to   { box-shadow:0 0 0 8px rgba(239,68,68,.07),0 20px 70px rgba(239,68,68,.55); }
+        }
+        .up-crash-icon  { font-size:34px; margin-bottom:10px; }
+        .up-crash-title { font-family:var(--font-display); font-weight:800; font-size:18px; color:#fff; margin-bottom:6px; }
+        .up-crash-sub   { font-size:13px; color:rgba(255,255,255,.7); margin-bottom:10px; }
+        .up-crash-num   { font-family:var(--font-display); font-weight:800; font-size:48px; color:#fff; line-height:1; margin-bottom:16px; }
+        .up-crash-btn   { width:100%; padding:13px; border:none; border-radius:13px; background:#fff; color:#991b1b; font-family:var(--font-display); font-weight:700; font-size:14px; cursor:pointer; transition:background .2s; }
+        .up-crash-btn:hover { background:#fee2e2; }
+        .up-sos-ok {
+          width:100%; max-width:300px;
+          background:rgba(5,150,105,.92); border:1px solid rgba(16,185,129,.4);
+          border-radius:16px; padding:14px 18px;
+          font-family:var(--font-display); font-weight:600; font-size:14px;
+          color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;
+        }
 
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-[1000] pointer-events-none">
-        <div className="flex items-center justify-between px-4 pt-4">
-          <div className="pointer-events-auto flex items-center gap-2">
-            <Link
-              href="/"
-              className="glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 hover:bg-white/10 transition-colors"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </Link>
-            <div className="glass-card px-4 py-2.5 flex items-center gap-2.5 shadow-lg shadow-black/30">
-              <div
-                className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-black text-xs"
-                style={{ fontFamily: "Outfit" }}
-              >
-                SOS
-              </div>
-              <div>
-                <h1
-                  className="text-base font-bold tracking-tight"
-                  style={{ fontFamily: "Outfit" }}
-                >
-                  RoadSOS
-                </h1>
-                <p className="text-[10px] text-white/40 -mt-0.5">
-                  {userProfile?.name || "User"} · {userProfile?.bloodGroup || "--"}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pointer-events-auto">
-            <Link
-              href="/profile"
-              className="glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 hover:bg-white/10 transition-colors text-sm"
-              title="My Profile"
-            >
-              👤
-            </Link>
-              <button
-    onClick={handleLogout}
-    className="glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 hover:bg-red-500/20 hover:text-red-400 transition-colors text-sm cursor-pointer"
-    title="Logout"
-  >
-    🚪
-  </button>
-            <button
-              onClick={() => setTrafficOpen(!trafficOpen)}
-              className={`glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 transition-all cursor-pointer ${trafficOpen ? "bg-blue-500/20 border-blue-500/30 text-blue-400" : "hover:bg-white/10 text-white/70"}`}
-              title="Live Traffic"
-            >
-              <span className="text-base">🚦</span>
-            </button>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="glass-card w-10 h-10 flex items-center justify-center shadow-lg shadow-black/30 hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                {sidebarOpen ? (
-                  <path d="M18 6L6 18M6 6l12 12" />
-                ) : (
-                  <>
-                    <path d="M3 12h18" />
-                    <path d="M3 6h18" />
-                    <path d="M3 18h18" />
-                  </>
-                )}
-              </svg>
-            </button>
-          </div>
-        </div>
+        /* ─── ROUTE PANEL ─── */
+        .up-route-panel {
+          position:absolute; bottom:100px; left:12px; right:12px;
+          z-index:1000; pointer-events:auto;
+          animation:slideup .35s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes slideup { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .up-route-card {
+          background:rgba(7,9,20,.97); border:1px solid rgba(59,130,246,.26);
+          border-radius:20px; padding:16px 18px;
+          backdrop-filter:var(--blur);
+          box-shadow:0 16px 48px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;
+          position:relative; overflow:hidden;
+        }
+        .up-route-card::before {
+          content:''; position:absolute; top:0; left:0; right:0; height:1px;
+          background:linear-gradient(90deg,transparent,rgba(59,130,246,.7),rgba(34,211,238,.4),transparent);
+        }
+        .up-route-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .up-route-dest { display:flex; align-items:center; gap:12px; }
+        .up-route-ico {
+          width:40px; height:40px; border-radius:12px; flex-shrink:0;
+          background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+          display:flex; align-items:center; justify-content:center;
+          box-shadow:0 4px 14px rgba(59,130,246,.35);
+        }
+        .up-route-name { font-family:var(--font-display); font-weight:700; font-size:14px; color:var(--text-primary); }
+        .up-route-type { font-size:11px; color:var(--text-hint); margin-top:2px; }
+        .up-route-x {
+          width:28px; height:28px; border-radius:8px; border:none; cursor:pointer;
+          background:rgba(255,255,255,.06); color:var(--text-hint);
+          display:flex; align-items:center; justify-content:center; transition:all .2s;
+        }
+        .up-route-x:hover { background:rgba(255,255,255,.12); color:var(--text-primary); }
+        .up-route-stats { display:flex; align-items:center; }
+        .up-stat { flex:1; }
+        .up-stat-v { font-family:var(--font-display); font-weight:700; font-size:18px; line-height:1; }
+        .up-stat-l { font-size:10px; color:var(--text-hint); margin-top:3px; letter-spacing:.06em; text-transform:uppercase; }
+        .up-stat-d { width:1px; height:34px; background:var(--border); margin:0 14px; }
 
-        {/* Category filters */}
-        <div className="flex gap-2 px-4 mt-3 overflow-x-auto no-scrollbar pointer-events-auto">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveFilter(cat.id)}
-              className={`category-btn flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap border cursor-pointer transition-all ${activeFilter === cat.id ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg` : "glass-card text-white/60 hover:text-white/90 border-white/10"}`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
-        </div>
+        /* ─── SOS AREA ─── */
+        .up-sos-area {
+          position:absolute; left:50%; transform:translateX(-50%);
+          z-index:1000; display:flex; flex-direction:column; align-items:center; gap:6px;
+          transition:bottom .3s cubic-bezier(.16,1,.3,1);
+        }
+        .up-offline-pill {
+          display:flex; align-items:center; gap:5px;
+          font-size:10px; color:rgba(52,211,153,.65);
+          background:rgba(16,185,129,.07); border:1px solid rgba(16,185,129,.15);
+          border-radius:50px; padding:4px 10px;
+          font-family:var(--font-display); font-weight:500;
+        }
+        .up-offline-dot { width:5px; height:5px; border-radius:50%; background:rgba(52,211,153,.65); }
 
-        {/* DB notice banner */}
-        {dbNotice && (
-          <div className="mx-4 mt-2 pointer-events-auto glass-card px-3 py-2 text-xs text-amber-400 border-amber-500/20 flex items-center gap-2">
-            <span>⚠️</span>
-            <span className="flex-1">{dbNotice}</span>
-            <button
-              onClick={() => setDbNotice(null)}
-              className="text-white/40 hover:text-white cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </div>
+        /* ─── SIDEBAR ─── */
+        .up-sidebar { position:absolute; top:0; right:0; height:100%; width:296px; z-index:1001; transition:transform .3s cubic-bezier(.16,1,.3,1); }
+        .up-sidebar.closed { transform:translateX(100%); }
+        .up-sidebar.open   { transform:translateX(0); }
+        .up-sidebar-in {
+          height:100%; background:rgba(6,8,18,.97); border-left:1px solid rgba(255,255,255,.07);
+          backdrop-filter:var(--blur); display:flex; flex-direction:column;
+        }
+        .up-sb-head {
+          padding:16px; border-bottom:1px solid var(--border);
+          display:flex; align-items:center; justify-content:space-between;
+        }
+        .up-sb-title { font-family:var(--font-display); font-weight:700; font-size:15px; color:var(--text-primary); }
+        .up-sb-count { font-size:11px; color:var(--text-hint); margin-top:2px; }
+        .up-sb-close {
+          width:28px; height:28px; border-radius:8px; border:none; cursor:pointer;
+          background:rgba(255,255,255,.05); color:var(--text-hint);
+          display:flex; align-items:center; justify-content:center; transition:all .2s;
+        }
+        .up-sb-close:hover { background:rgba(255,255,255,.1); color:var(--text-primary); }
+        .up-sb-list { flex:1; overflow-y:auto; padding:10px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.07) transparent; }
 
-      {/* Route info panel */}
-      {routeData && (
-        <div className="absolute bottom-24 left-4 right-4 z-[1000] pointer-events-auto animate-fade-in-up">
-          <div className="glass-card p-4 border-blue-500/20 bg-[#0a0a0f]/90 backdrop-blur-xl">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold" style={{ fontFamily: "Outfit" }}>{routeData.destination.name}</h3>
-                  <p className="text-[11px] text-white/40">{routeData.destination.type}</p>
-                </div>
-              </div>
-              <button
-                onClick={clearRoute}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all cursor-pointer"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-5 flex-1">
-                <div>
-                  <p className="text-lg font-bold text-blue-400" style={{ fontFamily: "Outfit" }}>{(routeData.distance / 1000).toFixed(1)} km</p>
-                  <p className="text-[10px] text-white/30">Distance</p>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div>
-                  <p className="text-lg font-bold text-emerald-400" style={{ fontFamily: "Outfit" }}>~{Math.round(routeData.duration / 60)} min</p>
-                  <p className="text-[10px] text-white/30">ETA</p>
-                </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div>
-                  <p className="text-lg font-bold text-amber-400" style={{ fontFamily: "Outfit" }}>{Math.round(routeData.distance / 1000 / (routeData.duration / 3600))} km/h</p>
-                  <p className="text-[10px] text-white/30">Avg Speed</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        .up-svc { background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:8px; transition:all .2s; cursor:pointer; }
+        .up-svc:hover { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.12); }
+        .up-svc.active { background:rgba(59,130,246,.07); border-color:rgba(59,130,246,.28); }
+        .up-svc-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
+        .up-svc-name { font-family:var(--font-display); font-weight:600; font-size:13px; color:var(--text-primary); line-height:1.3; flex:1; padding-right:8px; }
+        .up-svc-badge { font-size:9px; padding:2px 7px; border-radius:50px; border:1px solid; font-family:var(--font-display); font-weight:700; white-space:nowrap; flex-shrink:0; text-transform:uppercase; letter-spacing:.05em; }
+        .up-svc-meta { display:flex; flex-wrap:wrap; gap:6px 10px; font-size:11px; color:var(--text-hint); margin-bottom:6px; }
+        .up-svc-addr { font-size:10px; color:rgba(255,255,255,.2); margin-bottom:8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+        .up-svc-btns { display:flex; gap:7px; }
+        .up-call {
+          flex:1; padding:8px; border-radius:10px; border:none; cursor:pointer;
+          background:linear-gradient(135deg,#059669,#065f46);
+          color:#fff; font-family:var(--font-display); font-weight:700; font-size:12px;
+          text-decoration:none; display:flex; align-items:center; justify-content:center;
+          transition:opacity .2s; box-shadow:0 2px 10px rgba(5,150,105,.28);
+        }
+        .up-call:hover { opacity:.88; }
+        .up-dir {
+          flex:1; padding:8px; border-radius:10px; border:1px solid var(--border); cursor:pointer;
+          background:rgba(255,255,255,.04); color:var(--text-secondary);
+          font-family:var(--font-display); font-weight:600; font-size:12px;
+          transition:all .2s; display:flex; align-items:center; justify-content:center; gap:4px;
+        }
+        .up-dir:hover { background:rgba(255,255,255,.08); color:var(--text-primary); }
+        .up-dir.active { background:rgba(59,130,246,.12); border-color:rgba(59,130,246,.3); color:#60a5fa; }
+        .up-dir:disabled { opacity:.4; cursor:not-allowed; }
+        .up-spin { width:11px; height:11px; border-radius:50%; border:1.5px solid rgba(255,255,255,.3); border-top-color:#fff; animation:spin .7s linear infinite; display:inline-block; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .up-empty { text-align:center; padding:48px 16px; color:var(--text-hint); }
+        .up-empty-icon { font-size:32px; margin-bottom:8px; }
+        .up-empty-text { font-size:13px; font-family:var(--font-display); }
+      `}</style>
 
-      {/* Traffic Panel */}
-      <TrafficPanel
-        userLat={userLocation?.lat || null}
-        userLng={userLocation?.lng || null}
-        services={services}
-        isVisible={trafficOpen}
-        onClose={() => setTrafficOpen(false)}
-      />
-
-      {/* SOS Button */}
-      <div className={`absolute ${routeData ? "bottom-44" : "bottom-8"} left-1/2 -translate-x-1/2 z-[1000] transition-all duration-300 flex flex-col items-center`}>
-        <SOSButton
-          userProfile={userProfile || getUserProfile()}
-          userLocation={userLocation}
-          externalTrigger={sosTriggered}
-          onTriggered={(id) => {
-            const lat = userLocation?.lat || 28.6139;
-            const lng = userLocation?.lng || 77.209;
-            router.push(`/emergency/${id}?lat=${lat}&lng=${lng}`);
-          }}
+      <div className="relative h-full w-full">
+        <Map
+          activeFilter={activeFilter}
+          routeData={routeData}
+          onServicesLoaded={(s) => setServices(s)}
+          onLocationReady={(lat, lng) => setUserLocation({ lat, lng })}
+          onError={(msg) => setDbNotice(msg)}
         />
-        {offlineCached && (
-          <div className="mt-2 flex items-center gap-1.5 text-[9px] text-emerald-400/50 bg-emerald-500/5 px-2.5 py-1 rounded-full border border-emerald-500/10">
-            <span className="w-1 h-1 rounded-full bg-emerald-400/60" />
-            Offline ready
-          </div>
-        )}
-      </div>
 
-      {/* Sidebar */}
-      <div
-        className={`absolute top-0 right-0 h-full w-80 z-[1001] transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        <div className="h-full bg-[#0a0a0f]/95 backdrop-blur-xl border-l border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10">
-            <div className="flex items-center justify-between mb-1">
-              <h2
-                className="text-lg font-bold"
-                style={{ fontFamily: "Outfit" }}
-              >
-                Nearby Services
-              </h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+        {/* ── HEADER ── */}
+        <div className="up-header">
+          {/* Row 1 */}
+          <div className="up-row1">
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <Link href="/" className="up-icon-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+              </Link>
+              <div className="up-brand">
+                <div className="up-brand-badge">SOS</div>
+                <div>
+                  <div className="up-brand-name">RoadSOS</div>
+                  <div className="up-brand-sub">{userProfile?.name || "User"} · {userProfile?.bloodGroup || "--"}</div>
+                </div>
+              </div>
+            </div>
+            <div className="up-actions">
+              <Link href="/profile" className="up-icon-btn" title="Profile">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </Link>
+              <button onClick={() => setTrafficOpen(!trafficOpen)} className={`up-icon-btn ${trafficOpen ? "traffic-on" : ""}`} title="Live Traffic">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></svg>
+              </button>
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="up-icon-btn" title="Nearby Services">
+                {sidebarOpen
+                  ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12h18"/><path d="M3 6h18"/><path d="M3 18h18"/></svg>}
+              </button>
+              <button onClick={handleLogout} className="up-logout">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
               </button>
             </div>
-            <p className="text-xs text-white/40">
-              {filtered.length} services found
-            </p>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {filtered.map((s) => {
-              const isActive = routeData?.destination.name === s.name;
-              return (
-                <div
-                  key={s._id}
-                  className={`glass-card p-3 transition-colors cursor-pointer ${isActive ? "border-blue-500/30 bg-blue-500/[0.06]" : "hover:bg-white/[0.06]"}`}
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <h3 className="text-sm font-semibold leading-tight pr-2">
-                      {s.name}
-                    </h3>
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${typeColors[s.type] || ""}`}
-                    >
-                      {s.type}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/50">
-                    <span>📞 {s.phone[0]}</span>
-                    <span>📏 {s.distance} km</span>
-                    <span>⭐ {s.rating}</span>
-                  </div>
-                  {s.address && (
-                    <p className="text-[10px] text-white/30 mt-1 truncate">
-                      📍 {s.address}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-2.5">
-                    <a
-                      href={`tel:${s.phone[0]}`}
-                      className="flex-1 text-center py-1.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity"
-                    >
-                      Call
-                    </a>
-                    <button
-                      onClick={() => fetchRoute(s)}
-                      disabled={routeLoading === s._id}
-                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all border cursor-pointer text-center ${
-                        isActive
-                          ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                          : "bg-white/5 text-white/70 hover:bg-white/10 border-white/10"
-                      } disabled:opacity-50`}
-                    >
-                      {routeLoading === s._id ? (
-                        <span className="flex items-center justify-center gap-1">
-                          <span className="w-3 h-3 border border-white/40 border-t-transparent rounded-full animate-spin" />
-                          Loading
-                        </span>
-                      ) : isActive ? (
-                        "✓ Route Active"
-                      ) : (
-                        "Directions"
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            {filtered.length === 0 && (
-              <div className="text-center py-12 text-white/30 text-sm">
-                <p className="text-3xl mb-2">📍</p>
-                <p>Waiting for location...</p>
+
+          {/* Row 2 – filters */}
+          <div className="up-row2">
+            <div className="up-filters">
+              {categories.map((cat) => (
+                <button key={cat.id} onClick={() => setActiveFilter(cat.id)}
+                  className={`up-filter-btn ${activeFilter === cat.id ? `active bg-gradient-to-r ${cat.color}` : ""}`}>
+                  <span>{cat.icon}</span><span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 3 – notice */}
+          {dbNotice && (
+            <div className="up-row3">
+              <div className="up-notice">
+                <span>⚠️</span>
+                <span style={{ flex:1 }}>{dbNotice}</span>
+                <button className="up-notice-x" onClick={() => setDbNotice(null)}>✕</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── TELEMETRY — bottom-left, clear of SOS ── */}
+        <div className="up-telem">
+          <span style={{ opacity:.5 }}>📈</span>
+          Accel: <span className="up-telem-val">{acceleration.toFixed(2)}</span>
+          <div className="up-telem-sep" />
+          Speed: <span className="up-telem-val">{currentSpeed.toFixed(1)} km/h</span>
+        </div>
+
+        {/* ── CRASH MODAL — full-screen dimmed overlay, never overlaps SOS ── */}
+        {(crashDetected || sosTriggered) && (
+          <div className="up-crash-bg">
+            {crashDetected && (
+              <div className="up-crash-card">
+                <div className="up-crash-icon">🚨</div>
+                <div className="up-crash-title">Possible Crash Detected!</div>
+                <div className="up-crash-sub">Sending SOS automatically in</div>
+                <div className="up-crash-num">{countdown}</div>
+                <button onClick={cancelEmergency} className="up-crash-btn">Cancel Emergency</button>
+              </div>
+            )}
+            {sosTriggered && (
+              <div className="up-sos-ok">
+                <span>✅</span> Emergency SOS Triggered
               </div>
             )}
           </div>
+        )}
+
+        {/* ── TRAFFIC PANEL ── */}
+        <TrafficPanel
+          userLat={userLocation?.lat || null}
+          userLng={userLocation?.lng || null}
+          services={services}
+          isVisible={trafficOpen}
+          onClose={() => setTrafficOpen(false)}
+        />
+
+        {/* ── ROUTE PANEL — floats just above SOS ── */}
+        {routeData && (
+          <div className="up-route-panel">
+            <div className="up-route-card">
+              <div className="up-route-top">
+                <div className="up-route-dest">
+                  <div className="up-route-ico">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </div>
+                  <div>
+                    <div className="up-route-name">{routeData.destination.name}</div>
+                    <div className="up-route-type">{routeData.destination.type}</div>
+                  </div>
+                </div>
+                <button onClick={clearRoute} className="up-route-x">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div className="up-route-stats">
+                <div className="up-stat">
+                  <div className="up-stat-v" style={{ color:"#60a5fa" }}>{(routeData.distance/1000).toFixed(1)} km</div>
+                  <div className="up-stat-l">Distance</div>
+                </div>
+                <div className="up-stat-d" />
+                <div className="up-stat">
+                  <div className="up-stat-v" style={{ color:"#34d399" }}>~{Math.round(routeData.duration/60)} min</div>
+                  <div className="up-stat-l">ETA</div>
+                </div>
+                <div className="up-stat-d" />
+                <div className="up-stat">
+                  <div className="up-stat-v" style={{ color:"#fbbf24" }}>{Math.round(routeData.distance/1000/(routeData.duration/3600))} km/h</div>
+                  <div className="up-stat-l">Avg Speed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SOS BUTTON — clean bottom centre, never obscured ── */}
+        <div className="up-sos-area" style={{ bottom: sosBottom }}>
+          <SOSButton
+            userProfile={userProfile || getUserProfile()}
+            userLocation={userLocation}
+            externalTrigger={sosTriggered}
+            onTriggered={(id) => {
+              const lat = userLocation?.lat || 28.6139;
+              const lng = userLocation?.lng || 77.209;
+              router.push(`/emergency/${id}?lat=${lat}&lng=${lng}`);
+            }}
+          />
+          {offlineCached && (
+            <div className="up-offline-pill">
+              <div className="up-offline-dot" />
+              Offline ready
+            </div>
+          )}
+        </div>
+
+        {/* ── SIDEBAR ── */}
+        <div className={`up-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+          <div className="up-sidebar-in">
+            <div className="up-sb-head">
+              <div>
+                <div className="up-sb-title">Nearby Services</div>
+                <div className="up-sb-count">{filtered.length} services found</div>
+              </div>
+              <button onClick={() => setSidebarOpen(false)} className="up-sb-close">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="up-sb-list">
+              {filtered.map((s) => {
+                const isActive = routeData?.destination.name === s.name;
+                return (
+                  <div key={s._id} className={`up-svc ${isActive ? "active" : ""}`}>
+                    <div className="up-svc-top">
+                      <div className="up-svc-name">{s.name}</div>
+                      <span className={`up-svc-badge ${typeColors[s.type] || ""}`}>{s.type}</span>
+                    </div>
+                    <div className="up-svc-meta">
+                      <span>📞 {s.phone[0]}</span>
+                      <span>📏 {s.distance} km</span>
+                      <span>⭐ {s.rating}</span>
+                    </div>
+                    {s.address && <div className="up-svc-addr">📍 {s.address}</div>}
+                    <div className="up-svc-btns">
+                      <a href={`tel:${s.phone[0]}`} className="up-call">Call</a>
+                      <button onClick={() => fetchRoute(s)} disabled={routeLoading === s._id}
+                        className={`up-dir ${isActive ? "active" : ""}`}>
+                        {routeLoading === s._id
+                          ? <><span className="up-spin" />&nbsp;Loading</>
+                          : isActive ? "✓ Active" : "Directions"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {filtered.length === 0 && (
+                <div className="up-empty">
+                  <div className="up-empty-icon">📍</div>
+                  <div className="up-empty-text">Waiting for location…</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
