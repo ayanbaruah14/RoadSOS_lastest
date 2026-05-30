@@ -510,56 +510,79 @@ export default function UserPage() {
           onClose={() => setTrafficOpen(false)}
         />
 
-        {/* ── ROUTE PANEL ── */}
-        {routeData && (
-          <div className="up-route-panel">
-            <div className="up-route-card">
-              <div className="up-route-top">
-                <div className="up-route-dest">
-                  <div className="up-route-ico">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  </div>
-                  <div>
-                    <div className="up-route-name">{routeData.destination.name}</div>
-                    <div className="up-route-type">{routeData.destination.type}</div>
-                  </div>
-                </div>
-                <button onClick={clearRoute} className="up-route-x">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-              <div className="up-route-stats">
-                <div className="up-stat">
-                  <div className="up-stat-v" style={{ color:"#60a5fa" }}>{(routeData.distance/1000).toFixed(1)} km</div>
-                  <div className="up-stat-l">Distance</div>
-                </div>
-                <div className="up-stat-d" />
-                <div className="up-stat">
-                  <div className="up-stat-v" style={{ color:"#34d399" }}>~{Math.round(routeData.duration/60)} min</div>
-                  <div className="up-stat-l">ETA</div>
-                </div>
-                <div className="up-stat-d" />
-                <div className="up-stat">
-                  <div className="up-stat-v" style={{ color:"#fbbf24" }}>{Math.round(routeData.distance/1000/(routeData.duration/3600))} km/h</div>
-                  <div className="up-stat-l">Avg Speed</div>
-                </div>
-              </div>
+{/* ── ROUTE PANEL ── */}
+{routeData && (
+  <div
+    style={{
+      position: "absolute",
+      bottom: 136,           // sits above SOS button always
+      left: 12,
+      right: 12,
+      zIndex: 1000,
+      animation: "slideup .35s cubic-bezier(.16,1,.3,1) both",
+    }}
+  >
+    <div className="up-route-card">
+      <div className="up-route-top">
+        <div className="up-route-dest">
+          <div className="up-route-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div>
+            <div className="up-route-name">{routeData.destination.name}</div>
+            <div className="up-route-type" style={{ textTransform: "capitalize" }}>
+              {routeData.destination.type}
             </div>
           </div>
-        )}
+        </div>
+        <button onClick={clearRoute} className="up-route-x" title="Close route">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div className="up-route-stats">
+        <div className="up-stat">
+          <div className="up-stat-v" style={{ color: "#60a5fa" }}>
+            {(routeData.distance / 1000).toFixed(1)} km
+          </div>
+          <div className="up-stat-l">Distance</div>
+        </div>
+        <div className="up-stat-d" />
+        <div className="up-stat">
+          <div className="up-stat-v" style={{ color: "#34d399" }}>
+            ~{Math.round(routeData.duration / 60)} min
+          </div>
+          <div className="up-stat-l">ETA</div>
+        </div>
+        <div className="up-stat-d" />
+        <div className="up-stat">
+          <div className="up-stat-v" style={{ color: "#fbbf24" }}>
+            {Math.round(routeData.distance / 1000 / (routeData.duration / 3600))} km/h
+          </div>
+          <div className="up-stat-l">Avg Speed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
-        {/* Route fetching toast */}
-        {routeLoading && !routeData && (
-          <div className="up-route-panel">
-            <div className="up-route-loading">
-              <span className="up-spin" style={{ borderTopColor: "#93c5fd", borderColor: "rgba(147,197,253,0.3)" }} />
-              Calculating route…
-            </div>
-          </div>
-        )}
+{/* Route fetching toast */}
+{routeLoading && !routeData && (
+  <div style={{ position: "absolute", bottom: 136, left: 12, right: 12, zIndex: 1000 }}>
+    <div className="up-route-loading">
+      <span className="up-spin" style={{ borderTopColor: "#93c5fd", borderColor: "rgba(147,197,253,0.3)" }} />
+      Calculating route…
+    </div>
+  </div>
+)}
 
         {/* ── SOS AREA ── */}
-        <div className="up-sos-area" style={{ bottom: sosBottom }}>
+        {/* ── SOS AREA ── */}
+<div className="up-sos-area" style={{ bottom: 32 }}>
           <SOSButton
             userProfile={userProfile || getUserProfile()}
             userLocation={userLocation}
