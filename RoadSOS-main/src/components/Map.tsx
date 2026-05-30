@@ -136,13 +136,10 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         out body;
       `;
 
-      const response = await fetch(
-        "https://overpass-api.de/api/interpreter",
-        {
-          method: "POST",
-          body: query,
-        }
-      );
+const response = await fetch(
+  "/api/overpass",
+  { method: "POST", body: query }
+);
 
       if (!response.ok) {
         throw new Error("Overpass API failed");

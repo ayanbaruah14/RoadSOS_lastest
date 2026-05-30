@@ -4,6 +4,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+    async rewrites() {
+    return [
+      {
+        source: "/api/overpass",
+        destination: "https://overpass-api.de/api/interpreter",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
