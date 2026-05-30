@@ -468,7 +468,7 @@ export default function UserPage() {
           {/* Row 3 – notice */}
           {dbNotice && (
             <div className="up-row3">
-              <div className="up-notice">
+              <div className="up-notice" style={{ width: "fit-content" }}>
                 <span>⚠️</span>
                 <span style={{ flex:1 }}>{dbNotice}</span>
                 <button className="up-notice-x" onClick={() => setDbNotice(null)}>✕</button>
