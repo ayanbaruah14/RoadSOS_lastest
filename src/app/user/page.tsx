@@ -104,7 +104,7 @@ export default function UserPage() {
         if (totalAcceleration < 1) totalAcceleration = 0;
         setAcceleration(totalAcceleration);
         const now = Date.now();
-        if (totalAcceleration > 10 && currentSpeed > 0 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
+        if (totalAcceleration > 25 && currentSpeed > 20 && !sosTriggered && !crashDetected && now - lastCrashTime > 30000) {
           setLastCrashTime(now);
           setCrashDetected(true);
           setCountdown(10);
