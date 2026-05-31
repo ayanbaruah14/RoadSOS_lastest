@@ -449,7 +449,21 @@ export default function EmergencyPage() {
         `_Please check on them._`;
 
     const phoneNum = specificPhone || contacts[0]?.phone;
-    const phoneParam = phoneNum ? `phone=${phoneNum.replace(/\+/g, "").replace(/\s+/g, "")}&` : "";
+    let formattedPhone = "";
+    if (phoneNum) {
+      // Strip spaces, dashes, parentheses
+      let cleaned = phoneNum.replace(/[\s\-\(\)]/g, "");
+      if (cleaned.startsWith("+")) {
+        formattedPhone = cleaned.replace(/\+/g, "");
+      } else if (/^\d{10}$/.test(cleaned)) {
+        formattedPhone = "91" + cleaned;
+      } else if (/^0\d{10}$/.test(cleaned)) {
+        formattedPhone = "91" + cleaned.slice(1);
+      } else {
+        formattedPhone = cleaned.replace(/\D/g, "");
+      }
+    }
+    const phoneParam = formattedPhone ? `phone=${formattedPhone}&` : "";
     return `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(body)}`;
   }, [userProfile, userLat, userLng, hospital]);
 
