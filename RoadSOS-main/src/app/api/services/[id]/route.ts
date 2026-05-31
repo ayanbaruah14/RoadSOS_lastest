@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db/connection";
 import EmergencyService from "@/lib/db/models/EmergencyService";
 
-// GET /api/services/[id]
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

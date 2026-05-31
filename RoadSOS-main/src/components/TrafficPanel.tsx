@@ -80,7 +80,6 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
     }
   }, [userLat, userLng, services]);
 
-  // Fetch on mount and every 60s
   useEffect(() => {
     if (isVisible) {
       fetchTraffic();
@@ -96,7 +95,7 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
 
   return (
     <div className="absolute bottom-24 left-4 z-[1000] w-80 max-h-[60vh] flex flex-col glass-card shadow-2xl shadow-black/40 overflow-hidden">
-      {/* Header */}
+
       <div className="p-3 border-b border-white/10 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-sm">🚦</div>
@@ -115,7 +114,6 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
         </div>
       </div>
 
-      {/* Traffic Status */}
       {traffic && (
         <div className={`mx-3 mt-3 p-2.5 rounded-xl ${config.bg} border ${config.border}`}>
           <div className="flex items-center gap-2 mb-1">
@@ -126,7 +124,7 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
             <span className="text-[10px] text-white/30 ml-auto">{traffic.factor}x</span>
           </div>
           <p className="text-[11px] text-white/50 leading-relaxed">{traffic.description}</p>
-          {/* Traffic bar visualization */}
+
           <div className="flex gap-0.5 mt-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= Math.ceil(traffic.factor * 2.5) ? config.barColor : "bg-white/10"} transition-all`} />
@@ -135,7 +133,6 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
         </div>
       )}
 
-      {/* Routes */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {loading && !trafficData && (
           <div className="text-center py-8">
@@ -164,7 +161,7 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
                   )}
                 </div>
               </div>
-              {/* Mini traffic bar */}
+
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                   <div className={`h-full ${rl.barColor} rounded-full transition-all`} style={{ width: `${Math.min(100, (route.duration / route.durationInTraffic) * 100)}%` }} />
@@ -180,7 +177,6 @@ export default function TrafficPanel({ userLat, userLng, services, isVisible, on
         )}
       </div>
 
-      {/* Footer */}
       <div className="p-2 border-t border-white/10 text-center shrink-0">
         <p className="text-[9px] text-white/20">Routes via OSRM · Traffic estimates based on time patterns</p>
       </div>

@@ -1,8 +1,5 @@
-// Offline emergency cache — pre-loads nearest hospital route
-// so SOS works even without internet
-
 const CACHE_KEY = "roadsos_emergency_cache";
-const CACHE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
+const CACHE_MAX_AGE = 10 * 60 * 1000;
 
 export interface EmergencyCache {
   userLat: number;
@@ -15,12 +12,11 @@ export interface EmergencyCache {
     distance: number;
     eta: number;
   };
-  routeGeometry: string; // encoded polyline
+  routeGeometry: string;
   routePoints: [number, number][];
   cachedAt: number;
 }
 
-/** Save emergency data to localStorage */
 export function saveEmergencyCache(data: EmergencyCache): void {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
@@ -30,7 +26,6 @@ export function saveEmergencyCache(data: EmergencyCache): void {
   }
 }
 
-/** Load emergency cache from localStorage */
 export function loadEmergencyCache(): EmergencyCache | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
@@ -38,10 +33,9 @@ export function loadEmergencyCache(): EmergencyCache | null {
 
     const data: EmergencyCache = JSON.parse(raw);
 
-    // Check if cache is stale
     if (Date.now() - data.cachedAt > CACHE_MAX_AGE) {
       console.log("[Offline] Cache expired, will refresh");
-      return data; // Still return stale data as fallback
+      return data;
     }
 
     return data;
@@ -50,29 +44,26 @@ export function loadEmergencyCache(): EmergencyCache | null {
   }
 }
 
-/** Check if cache is fresh (within max age) */
 export function isCacheFresh(): boolean {
   const cache = loadEmergencyCache();
   if (!cache) return false;
   return Date.now() - cache.cachedAt < CACHE_MAX_AGE;
 }
 
-/** Check if user has moved significantly from cached location */
 export function hasUserMoved(currentLat: number, currentLng: number, thresholdKm: number = 0.5): boolean {
   const cache = loadEmergencyCache();
   if (!cache) return true;
 
   const dLat = cache.userLat - currentLat;
   const dLng = cache.userLng - currentLng;
-  const distKm = Math.sqrt(dLat * dLat + dLng * dLng) * 111; // rough km
+  const distKm = Math.sqrt(dLat * dLat + dLng * dLng) * 111;
 
   return distKm > thresholdKm;
 }
 
-/** Pre-fetch nearest hospital and route, cache for offline use */
 export async function prefetchEmergencyRoute(lat: number, lng: number): Promise<EmergencyCache | null> {
   try {
-    // Find nearest hospitals
+
     let hospitals: { name: string; lat: number; lng: number; phone: string; distance: number }[] = [];
 
     const scrapeRes = await fetch(`/api/services/scrape?lat=${lat}&lng=${lng}&radius=10000`);
@@ -96,7 +87,6 @@ export async function prefetchEmergencyRoute(lat: number, lng: number): Promise<
 
     const closest = hospitals[0];
 
-    // Get OSRM route
     let eta = Math.round(closest.distance * 3);
     let routeGeometry = "";
     let routePoints: [number, number][] = [];
@@ -110,12 +100,12 @@ export async function prefetchEmergencyRoute(lat: number, lng: number): Promise<
         if (osrmData.code === "Ok" && osrmData.routes?.length) {
           eta = Math.round(osrmData.routes[0].duration / 60);
           routeGeometry = osrmData.routes[0].geometry;
-          // Decode polyline
+
           routePoints = decodePolylineForCache(routeGeometry);
         }
       }
     } catch {
-      // Use straight-line fallback
+
       routePoints = [[lat, lng], [closest.lat, closest.lng]];
     }
 
@@ -136,7 +126,6 @@ export async function prefetchEmergencyRoute(lat: number, lng: number): Promise<
   }
 }
 
-// Polyline decoder (duplicated here to avoid import issues)
 function decodePolylineForCache(encoded: string): [number, number][] {
   const points: [number, number][] = [];
   let index = 0, lat = 0, lng = 0;

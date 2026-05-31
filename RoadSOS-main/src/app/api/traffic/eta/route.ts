@@ -6,23 +6,21 @@ interface RouteResult {
   serviceId: string;
   serviceName: string;
   serviceType: string;
-  distance: number; // km
-  duration: number; // minutes
-  durationInTraffic: number; // estimated with traffic factor
+  distance: number;
+  duration: number;
+  durationInTraffic: number;
   trafficLevel: "free" | "moderate" | "heavy" | "severe";
-  trafficFactor: number; // multiplier (1.0 = free flow)
-  geometry?: string; // encoded polyline
+  trafficFactor: number;
+  geometry?: string;
 }
 
-// Estimate traffic factor based on time of day + day of week
 function getTrafficFactor(): { factor: number; level: "free" | "moderate" | "heavy" | "severe" } {
   const now = new Date();
   const hour = now.getHours();
-  const day = now.getDay(); // 0=Sun, 6=Sat
+  const day = now.getDay();
 
   const isWeekend = day === 0 || day === 6;
 
-  // Peak hours (India): 8-10 AM, 5-8 PM on weekdays
   if (!isWeekend) {
     if ((hour >= 8 && hour <= 10) || (hour >= 17 && hour <= 20)) {
       return { factor: 1.8, level: "heavy" };
@@ -34,7 +32,7 @@ function getTrafficFactor(): { factor: number; level: "free" | "moderate" | "hea
       return { factor: 1.2, level: "moderate" };
     }
   } else {
-    // Weekends — lighter traffic
+
     if (hour >= 10 && hour <= 14) {
       return { factor: 1.3, level: "moderate" };
     }
@@ -43,7 +41,6 @@ function getTrafficFactor(): { factor: number; level: "free" | "moderate" | "hea
     }
   }
 
-  // Late night / early morning — free flow
   if (hour >= 0 && hour < 6) {
     return { factor: 1.0, level: "free" };
   }
@@ -51,7 +48,6 @@ function getTrafficFactor(): { factor: number; level: "free" | "moderate" | "hea
   return { factor: 1.15, level: "free" };
 }
 
-// Fetch route from OSRM (free, no API key)
 async function getRoute(
   fromLat: number,
   fromLng: number,
@@ -81,8 +77,6 @@ async function getRoute(
   }
 }
 
-// GET /api/traffic/eta?lat=28.6&lng=77.2&services=id1,id2,...
-// Also accepts: serviceLats=lat1,lat2&serviceLngs=lng1,lng2&serviceNames=name1,name2&serviceTypes=type1,type2
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -93,7 +87,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "lat and lng required" }, { status: 400 });
     }
 
-    // Parse service coordinates from query params
     const serviceLats = (searchParams.get("serviceLats") || "").split(",").filter(Boolean).map(Number);
     const serviceLngs = (searchParams.get("serviceLngs") || "").split(",").filter(Boolean).map(Number);
     const serviceNames = (searchParams.get("serviceNames") || "").split(",").filter(Boolean);
@@ -107,7 +100,6 @@ export async function GET(req: NextRequest) {
     const traffic = getTrafficFactor();
     const results: RouteResult[] = [];
 
-    // Calculate routes — limit to first 5 to avoid rate limiting OSRM
     const limit = Math.min(serviceLats.length, 5);
 
     for (let i = 0; i < limit; i++) {
@@ -116,10 +108,9 @@ export async function GET(req: NextRequest) {
       if (route) {
         const durationInTraffic = Math.round(route.duration * traffic.factor * 10) / 10;
 
-        // Determine per-route traffic level based on duration increase
         let trafficLevel: "free" | "moderate" | "heavy" | "severe" = traffic.level;
         if (route.distance > 10) {
-          // Longer routes are more likely to hit traffic
+
           trafficLevel = traffic.factor > 1.5 ? "severe" : traffic.level;
         }
 
@@ -137,7 +128,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Sort by ETA
     results.sort((a, b) => a.durationInTraffic - b.durationInTraffic);
 
     return NextResponse.json({

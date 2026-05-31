@@ -43,7 +43,7 @@ export function getUserProfile(): UserProfile {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Merge with defaults to ensure all fields exist
+
       return { ...DEFAULT_PROFILE, ...parsed };
     }
   } catch { /* ignore */ }
@@ -55,7 +55,6 @@ export function saveUserProfile(profile: UserProfile): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
-// Keep backward compat export
 export const USER_PROFILE = DEFAULT_PROFILE;
 
 export const ADMIN_PROFILE = {

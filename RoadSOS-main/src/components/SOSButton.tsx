@@ -74,7 +74,6 @@ export default function SOSButton({
     } catch (error) {
       console.error(error);
 
-      // Fallback: If server is unreachable, attempt to open SMS app locally
       alert("Network error: Falling back to local SMS");
 
       const emergencyMessage =
@@ -119,7 +118,7 @@ export default function SOSButton({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-      {/* ── SOS Button ── */}
+
       <button
         onClick={handleSOS}
         disabled={triggered || sending}
@@ -143,7 +142,6 @@ export default function SOSButton({
         )}
       </button>
 
-      {/* ── Countdown — inline below button, no overlay ── */}
       {countdown !== null && (
         <div
           style={{
@@ -161,7 +159,6 @@ export default function SOSButton({
             }
           `}</style>
 
-          {/* Number + label row */}
           <div
             style={{
               display: "flex",
@@ -200,7 +197,6 @@ export default function SOSButton({
             </span>
           </div>
 
-          {/* Cancel */}
           <button
             onClick={clearCountdown}
             style={{
@@ -224,7 +220,6 @@ export default function SOSButton({
         </div>
       )}
 
-      {/* ── Sent confirmation ── */}
       {triggered && (
         <div
           style={{

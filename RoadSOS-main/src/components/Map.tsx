@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type L_Type from "leaflet";
 
-// ─── Shared phone validation util ────────────────────────────────────────────
 export const hasValidPhone = (phone: string[]): boolean => {
   if (phone.length === 0) return false;
   const val = phone[0].trim().toLowerCase();
@@ -21,13 +20,12 @@ export const hasValidPhone = (phone: string[]): boolean => {
   );
 };
 
-// Lazy-initialized icons (only created once, on the client)
 let L: typeof L_Type | null = null;
 let userIcon: L_Type.DivIcon;
 let serviceIcons: Record<string, L_Type.DivIcon>;
 
 function ensureLeafletIcons(leaflet: typeof L_Type) {
-  if (L) return; // already initialized
+  if (L) return;
   L = leaflet;
 
   userIcon = L.divIcon({
@@ -111,7 +109,6 @@ interface MapProps {
   onRouteRequest?: (service: ServiceData) => void;
 }
 
-// Attach route request handler to window so popup HTML buttons can call it
 declare global {
   interface Window {
     __roadsos_requestRoute: (serviceId: string) => void;
@@ -130,7 +127,6 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
   const [servicesVersion, setServicesVersion] = useState(0);
   const lastFetchPositionRef = useRef<[number, number] | null>(null);
 
-  // Keep global handler in sync with latest onRouteRequest callback
   useEffect(() => {
     window.__roadsos_requestRoute = (serviceId: string) => {
       const service = allServicesRef.current.find((s) => s._id === serviceId);
@@ -141,7 +137,6 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     };
   }, [onRouteRequest]);
 
-  // Fallback simulated data — only real/official emergency numbers; no dummy mobile numbers
   function generateFallback(lat: number, lng: number): ServiceData[] {
     const items: {
       name: string;
@@ -157,7 +152,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
       { name: "Highway Police Outpost",    type: "police",    phone: ["100"],  rating: 3.8, availability: "24x7",    offset: [-0.01, -0.005]  },
       { name: "Emergency Ambulance",       type: "ambulance", phone: ["108"],  rating: 4.7, availability: "24x7",    offset: [0.003,  0.006]  },
       { name: "Red Cross Ambulance",       type: "ambulance", phone: ["1099"], rating: 4.4, availability: "24x7",    offset: [-0.007, 0.004]  },
-      // Towing & repair — no real number available in fallback mode
+
       { name: "Highway Towing Service",    type: "towing",    phone: [],       rating: 4.1, availability: "24x7",    offset: [0.011, -0.003]  },
       { name: "QuickFix Auto Repair",      type: "repair",    phone: [],       rating: 4.3, availability: "8AM-10PM",offset: [-0.004,-0.011]  },
       { name: "Tyre Point Puncture Shop",  type: "repair",    phone: [],       rating: 3.9, availability: "7AM-9PM", offset: [0.009,  0.003]  },
@@ -225,7 +220,6 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  // Initialize map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
@@ -255,7 +249,7 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
 
     let watchId: number;
     if (navigator.geolocation) {
-      // Quick low-accuracy first fix
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (cancelled) return;
@@ -337,11 +331,11 @@ export default function Map({ activeFilter, routeData, onLocationReady, onServic
         { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 }
       );
     }
-    })(); // end async IIFE
+    })();
 
     return () => {
       cancelled = true;
-      navigator.geolocation.clearWatch(0); // safe no-op if no watch
+      navigator.geolocation.clearWatch(0);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -415,7 +409,6 @@ useEffect(() => {
 
     marker.addTo(markersRef.current!);
 
-    // Hide marker immediately if a route is already active
     if (routeData) {
       const el = marker.getElement?.();
       if (el) el.style.display = "none";
@@ -423,12 +416,10 @@ useEffect(() => {
   });
 }, [activeFilter, servicesVersion, routeData]);
 
-// Draw/clear route when routeData changes
 useEffect(() => {
   if (!routeLayerRef.current || !mapRef.current || !L) return;
   routeLayerRef.current.clearLayers();
 
-  // Hide/show all service markers based on whether a route is active
   if (markersRef.current) {
     markersRef.current.eachLayer((layer) => {
       const el = (layer as L_Type.Marker).getElement?.();
@@ -452,7 +443,6 @@ useEffect(() => {
   });
   mainLine.addTo(routeLayerRef.current);
 
-  // Animated dashed overlay
   const dashedLine = L!.polyline(routeData.points, {
     color: "#ffffff", weight: 2, opacity: 0.35,
     lineCap: "round", lineJoin: "round", dashArray: "8, 14",
@@ -484,7 +474,7 @@ useEffect(() => {
   destMarker.addTo(routeLayerRef.current);
 
   const bounds = L!.latLngBounds(routeData.points);
-  // Fit with padding that accounts for the route card at bottom
+
   map.fitBounds(bounds, { paddingTopLeft: [20, 160], paddingBottomRight: [20, 260], maxZoom: 16 });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

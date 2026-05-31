@@ -564,7 +564,7 @@ export default function HeatmapPage() {
       `}</style>
 
       <div className="hm-page">
-        {/* Header */}
+
         <header className="hm-header">
           <div className="hm-header-left">
             <Link href="/admin" className="hm-back">
@@ -600,7 +600,6 @@ export default function HeatmapPage() {
           </button>
         </header>
 
-        {/* Filter bar */}
         <div className="hm-filterbar">
           {filterOptions.map((opt) => (
             <button
@@ -614,7 +613,6 @@ export default function HeatmapPage() {
           ))}
         </div>
 
-        {/* Map */}
         <div className="hm-map-area">
           {loading && points.length === 0 && (
             <div className="hm-loading">
@@ -625,7 +623,6 @@ export default function HeatmapPage() {
 
           <div ref={mapContainerRef} className="hm-map-container" />
 
-          {/* Legend */}
           <div className="hm-legend anim-fade-up">
             <div className="hm-legend-title">Severity</div>
             {[
@@ -644,7 +641,6 @@ export default function HeatmapPage() {
             ))}
           </div>
 
-          {/* Sidebar */}
           {points.length > 0 && (
             <div className="hm-sidebar anim-fade-up">
               <div className="hm-sidebar-title">Recent Incidents</div>

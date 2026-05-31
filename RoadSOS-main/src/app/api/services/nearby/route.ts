@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db/connection";
 import EmergencyService from "@/lib/db/models/EmergencyService";
 
-// GET /api/services/nearby?lat=28.6&lng=77.2&radius=10&type=hospital
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
@@ -10,8 +9,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const lat = parseFloat(searchParams.get("lat") || "0");
     const lng = parseFloat(searchParams.get("lng") || "0");
-    const radius = parseFloat(searchParams.get("radius") || "10"); // km
-    const type = searchParams.get("type"); // optional filter
+    const radius = parseFloat(searchParams.get("radius") || "10");
+    const type = searchParams.get("type");
 
     if (!lat || !lng) {
       return NextResponse.json(
@@ -20,7 +19,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Build query
     const query: Record<string, unknown> = {
       location: {
         $near: {
@@ -39,7 +37,6 @@ export async function GET(req: NextRequest) {
 
     const services = await EmergencyService.find(query).limit(50).lean();
 
-    // Calculate distance for each service
     const servicesWithDistance = services.map((s) => {
       const [sLng, sLat] = s.location.coordinates;
       const dist = haversineDistance(lat, lng, sLat, sLng);
@@ -62,7 +59,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Haversine formula — distance in km between two lat/lng points
 function haversineDistance(
   lat1: number,
   lon1: number,

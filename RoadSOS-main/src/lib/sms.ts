@@ -1,6 +1,3 @@
-// SMS Service using Fast2SMS (India)
-// Get your free API key at https://www.fast2sms.com/
-
 const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY || "";
 const ADMIN_ALERT_NUMBER = "8957318789";
 
@@ -10,9 +7,6 @@ interface SMSResult {
   provider: string;
 }
 
-/**
- * Send an SMS via Fast2SMS API
- */
 async function sendViaFast2SMS(numbers: string[], message: string): Promise<SMSResult> {
   if (!FAST2SMS_API_KEY) {
     console.log("[SMS-FALLBACK] No Fast2SMS API key configured.");
@@ -56,8 +50,6 @@ async function sendViaFast2SMS(numbers: string[], message: string): Promise<SMSR
   }
 }
 
-// ─── PUBLIC API ──────────────────────────────────────────
-
 export interface SOSAlertSMSData {
   userName: string;
   userPhone: string;
@@ -69,9 +61,6 @@ export interface SOSAlertSMSData {
   nearestHospital?: string;
 }
 
-/**
- * Send SOS alert SMS to emergency contacts + admin
- */
 export async function sendSOSAlertSMS(
   emergencyContacts: { name: string; phone: string; relation: string }[],
   alertData: SOSAlertSMSData
@@ -86,21 +75,16 @@ export async function sendSOSAlertSMS(
     `📍 Location: ${mapsLink}\n` +
     `⚠️ Severity: ${alertData.severity.toUpperCase()}`;
 
-  // Collect all numbers: emergency contacts + admin
   const numbers = [
     ADMIN_ALERT_NUMBER,
     ...emergencyContacts.map((c) => c.phone),
   ].filter(Boolean);
 
-  // Deduplicate
   const uniqueNumbers = [...new Set(numbers)];
 
   return sendViaFast2SMS(uniqueNumbers, message);
 }
 
-/**
- * Send critical escalation SMS
- */
 export async function sendCriticalEscalationSMS(
   emergencyContacts: { name: string; phone: string; relation: string }[],
   alertData: SOSAlertSMSData
@@ -126,9 +110,6 @@ export async function sendCriticalEscalationSMS(
   return sendViaFast2SMS(uniqueNumbers, message);
 }
 
-/**
- * Send survey completion SMS to admin
- */
 export async function sendSurveyCompletedSMS(
   alertData: SOSAlertSMSData & {
     injuryLevel?: string;
@@ -147,9 +128,6 @@ export async function sendSurveyCompletedSMS(
   return sendViaFast2SMS([ADMIN_ALERT_NUMBER], message);
 }
 
-/**
- * Send resolution SMS to emergency contacts
- */
 export async function sendResolvedSMS(
   emergencyContacts: { name: string; phone: string; relation: string }[],
   userName: string

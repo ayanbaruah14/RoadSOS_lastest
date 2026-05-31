@@ -4,7 +4,6 @@ import SOSAlert from "@/lib/db/models/SOSAlert";
 import { sendSOSAlertSMS } from "@/lib/sms";
 import { alertEmitter, ALERT_EVENTS } from "@/lib/events";
 
-// POST /api/sos/trigger — Save SOS alert to MongoDB + Send SMS
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
       status: "active",
     });
 
-    // Emit real-time event for admin SSE
     alertEmitter.emit(ALERT_EVENTS.NEW_ALERT, {
       alertId: alert._id,
       userName: user.name,
@@ -53,7 +51,6 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-    // Send SMS to emergency contacts + admin (non-blocking)
     sendSOSAlertSMS(user.emergencyContacts || [], {
       userName: user.name,
       userPhone: user.phone,

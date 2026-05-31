@@ -91,7 +91,6 @@ textarea:focus-visible {
   outline-offset: 3px;
 }
 
-/* Leaflet overrides for dark theme */
 .leaflet-container {
   background: #050611 !important;
   font-family: "Inter", sans-serif !important;
@@ -124,7 +123,6 @@ textarea:focus-visible {
   color: rgba(34, 211, 238, 0.78) !important;
 }
 
-/* Custom popup styling */
 .leaflet-popup-content-wrapper {
   background:
     linear-gradient(145deg, rgba(16, 23, 48, 0.96), rgba(8, 10, 24, 0.96)) !important;
@@ -149,10 +147,6 @@ textarea:focus-visible {
   color: #ffffff !important;
   transform: scale(1.08);
 }
-
-/* ===========================
-   ANIMATIONS
-   =========================== */
 
 @keyframes sosPulse {
   0% {
@@ -314,16 +308,11 @@ textarea:focus-visible {
   animation: dotPulse 1.5s ease-in-out infinite;
 }
 
-/* Stagger delays */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 .delay-400 { animation-delay: 400ms; }
 .delay-500 { animation-delay: 500ms; }
-
-/* ===========================
-   GLASSMORPHISM CARDS
-   =========================== */
 
 .glass-card {
   background:
@@ -354,7 +343,6 @@ textarea:focus-visible {
     inset 0 1px 0 rgba(255, 255, 255, 0.13);
 }
 
-/* Gradient border card */
 .gradient-border {
   position: relative;
   background:
@@ -385,10 +373,6 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
-/* ===========================
-   CUSTOM SCROLLBAR
-   =========================== */
-
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -405,10 +389,6 @@ textarea:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, rgba(34, 211, 238, 0.72), rgba(255, 48, 79, 0.52));
 }
-
-/* ===========================
-   SERVICE CATEGORY BUTTONS
-   =========================== */
 
 .category-btn {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
@@ -428,10 +408,6 @@ textarea:focus-visible {
 .category-btn:active {
   transform: scale(0.96);
 }
-
-/* ===========================
-   STAT CARD
-   =========================== */
 
 .stat-card {
   background:
@@ -479,10 +455,6 @@ textarea:focus-visible {
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.32), 0 0 34px rgba(34, 211, 238, 0.08);
 }
 
-/* ===========================
-   ALERT CARD
-   =========================== */
-
 .alert-card {
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.082), rgba(255, 255, 255, 0.032)),
@@ -520,10 +492,6 @@ textarea:focus-visible {
 .alert-card.resolved {
   border-color: rgba(34, 197, 94, 0.24);
 }
-
-/* ===========================
-   PROFILE CARDS
-   =========================== */
 
 .profile-card {
   background:
@@ -608,7 +576,6 @@ textarea:hover {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* No-scrollbar utility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

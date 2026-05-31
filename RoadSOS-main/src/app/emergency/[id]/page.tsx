@@ -33,7 +33,6 @@ function decodePolyline(encoded: string): [number, number][] {
   return points;
 }
 
-/* ─── Inline styles injected once ─── */
 const GLOBAL_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
@@ -212,7 +211,6 @@ const GLOBAL_STYLES = `
   }
 `;
 
-/* ─── Helper: label chip ─── */
 function Chip({ color, children }: { color: string; children: React.ReactNode }) {
   const colors: Record<string, string> = {
     red: "rgba(255,59,59,0.14) border-[rgba(255,59,59,0.25)] text-[#ff5f5f]",
@@ -376,7 +374,7 @@ export default function EmergencyPage() {
     if (routePoints.length > 0) L.polyline(routePoints, { color: "#3d8bff", weight: 4, opacity: 0.75, dashArray: "10, 7" }).addTo(map);
     map.fitBounds(L.latLngBounds([[userLat, userLng], [hospital.lat, hospital.lng]]), { padding: [50, 50] });
     mapRef.current = map;
-    })(); // end async IIFE
+    })();
     return () => { cancelled = true; if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, [hospital, routePoints, userLat, userLng]);
 
@@ -391,7 +389,6 @@ export default function EmergencyPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [phase, updateAlert]);
 
-  /* ─── SMS deep-link builder ─── */
   const buildSmsUri = useCallback((isEscalated = false) => {
     if (!userProfile) return null;
     const contacts = userProfile.emergencyContacts || [];
@@ -417,13 +414,11 @@ export default function EmergencyPage() {
         (hospitalLine ? `🏥 ${hospitalLine}\n\n` : "") +
         `Please check on them.`;
 
-    // iOS uses & separator, Android/others use ?
     const isIOS = typeof navigator !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const sep = isIOS ? "&" : "?";
     return `sms:${phones}${sep}body=${encodeURIComponent(body)}`;
   }, [userProfile, userLat, userLng, hospital]);
 
-  /* ─── WhatsApp deep-link builder ─── */
   const buildWhatsAppUri = useCallback((isEscalated = false, specificPhone?: string) => {
     if (!userProfile) return null;
     const contacts = userProfile.emergencyContacts || [];
@@ -451,7 +446,7 @@ export default function EmergencyPage() {
     const phoneNum = specificPhone || contacts[0]?.phone;
     let formattedPhone = "";
     if (phoneNum) {
-      // Strip spaces, dashes, parentheses
+
       let cleaned = phoneNum.replace(/[\s\-\(\)]/g, "");
       if (cleaned.startsWith("+")) {
         formattedPhone = cleaned.replace(/\+/g, "");
@@ -467,12 +462,11 @@ export default function EmergencyPage() {
     return `https://api.whatsapp.com/send?${phoneParam}text=${encodeURIComponent(body)}`;
   }, [userProfile, userLat, userLng, hospital]);
 
-  /* ─── Auto-open SMS on escalation ─── */
   useEffect(() => {
     if (phase !== "escalated" || smsOpened) return;
     const uri = buildSmsUri(true);
     if (!uri) return;
-    // Small delay so the escalation UI renders first
+
     const timeout = setTimeout(() => {
       try {
         window.location.href = uri;
@@ -497,7 +491,6 @@ export default function EmergencyPage() {
   const timerPct = (timer / 10) * 100;
   const circumference = 2 * Math.PI * 52;
 
-  // Phase-derived header info
   const headerBadge =
     phase === "escalated" ? { emoji: "🚨", label: "CRITICAL — ESCALATED", labelColor: "#ff3b3b", bg: "rgba(255,59,59,0.10)", border: "rgba(255,59,59,0.25)" } :
     phase === "done"      ? { emoji: "✅", label: "Help Confirmed",        labelColor: "#22d87a", bg: "rgba(34,216,122,0.10)", border: "rgba(34,216,122,0.25)" } :
@@ -509,14 +502,12 @@ export default function EmergencyPage() {
 
       <div style={{ minHeight: "100dvh", background: "var(--bg)", display: "flex", flexDirection: "column", overflow: "auto", position: "relative" }}>
 
-        {/* ── Top ambient glow ── */}
         <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: 600, height: 300, background: phase === "escalated" ? "radial-gradient(ellipse at 50% 0%, rgba(255,59,59,0.09) 0%, transparent 70%)" : "radial-gradient(ellipse at 50% 0%, rgba(255,59,59,0.06) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
-        {/* ─── HEADER ─── */}
         <header style={{ flexShrink: 0, padding: "16px 16px 14px", borderBottom: "1px solid var(--border)", position: "relative", zIndex: 10 }}>
           <div className="mp-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-              {/* Badge icon */}
+
               <div style={{ width: 42, height: 42, borderRadius: 13, background: headerBadge.bg, border: `1px solid ${headerBadge.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                 {headerBadge.emoji}
               </div>
@@ -546,7 +537,6 @@ export default function EmergencyPage() {
           </div>
         </header>
 
-        {/* ─── ADMIN NOTIFICATIONS ─── */}
         {adminNotification === "responding" && (
           <div className="fade-up" style={{ flexShrink: 0, padding: "10px 16px 0" }}>
             <div className="mp-inner">
@@ -575,11 +565,10 @@ export default function EmergencyPage() {
           </div>
         )}
 
-        {/* ─── MAP ─── */}
         <div style={{ flexShrink: 0, height: "36vh", position: "relative" }}>
           {phase === "loading" && (
             <div className="fade-up" style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--bg)", gap: 14 }}>
-              {/* Spinner */}
+
               <div style={{ position: "relative", width: 48, height: 48 }}>
                 <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation: "spin 1s linear infinite" }}>
                   <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -594,16 +583,15 @@ export default function EmergencyPage() {
             </div>
           )}
           <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
-          {/* Map bottom fade */}
+
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 60, background: "linear-gradient(to bottom, transparent, var(--bg))", pointerEvents: "none" }} />
         </div>
 
-        {/* ─── HOSPITAL CARD ─── */}
         {hospital && (
           <div className="fade-up" style={{ flexShrink: 0, padding: "0 16px", marginTop: -8, position: "relative", zIndex: 10 }}>
             <div className="mp-inner">
             <div className="mp-card-hi" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-              {/* Icon */}
+
               <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #ff3b3b, #b91c1c)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 16px rgba(255,59,59,0.3)" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
               </div>
@@ -630,15 +618,12 @@ export default function EmergencyPage() {
           </div>
         )}
 
-        {/* ─── PHASE CONTENT ─── */}
         <div style={{ flex: 1, padding: "20px 16px 36px", position: "relative", zIndex: 5 }}>
           <div className="mp-inner">
 
-          {/* ══ TIMER PHASE ══ */}
           {phase === "timer" && (
             <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-              {/* Timer ring */}
               <div style={{ textAlign: "center" }}>
                 <div style={{ position: "relative", width: 136, height: 136, margin: "0 auto 12px" }}>
                   <svg className={timer <= 3 ? "ring-flash" : ""} width="136" height="136" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
@@ -659,7 +644,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* Info card */}
               <div className="mp-card" style={{ padding: "14px 16px", background: "rgba(255,184,48,0.05)", borderColor: "rgba(255,184,48,0.18)" }}>
                 <div className="display-text" style={{ fontSize: 13, color: "#ffb830", marginBottom: 6 }}>
                   Can you reach the hospital yourself?
@@ -672,7 +656,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* CTA */}
               <button onClick={handleCanReach} className="sweep-btn"
                 style={{ width: "100%", padding: "16px", borderRadius: 14, border: "none", color: "white", cursor: "pointer", boxShadow: "0 8px 32px rgba(34,197,94,0.30)", transition: "opacity .18s, transform .12s" }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = ".9")}
@@ -687,14 +670,13 @@ export default function EmergencyPage() {
                 Tap only if you can safely drive or walk to the hospital
               </p>
 
-              {/* ── SMS Card (Timer Phase) ── */}
               {(() => {
                 const emergencyContacts = userProfile?.emergencyContacts || [];
                 const smsUri = buildSmsUri(false);
                 const whatsAppUri = buildWhatsAppUri(false);
                 return emergencyContacts.length > 0 ? (
                   <div className="mp-card fade-up d4" style={{ width: "100%", padding: "14px 16px", textAlign: "left", borderColor: "rgba(255,184,48,0.18)", background: "rgba(255,184,48,0.04)", display: "flex", flexDirection: "column", gap: 12 }}>
-                    {/* Card header */}
+
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ width: 34, height: 34, borderRadius: 9, background: "linear-gradient(135deg, #ffb830, #e69500)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, boxShadow: "0 4px 14px rgba(255,184,48,0.25)" }}>📩</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -703,7 +685,6 @@ export default function EmergencyPage() {
                       </div>
                     </div>
 
-                    {/* Recipients */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {emergencyContacts.map((c, i) => {
                         const specificWhatsAppUri = buildWhatsAppUri(false, c.phone);
@@ -727,7 +708,6 @@ export default function EmergencyPage() {
                       })}
                     </div>
 
-                    {/* CTA Buttons */}
                     <div style={{ display: "flex", gap: 8, width: "100%" }}>
                       {smsUri && (
                         <a
@@ -775,7 +755,6 @@ export default function EmergencyPage() {
             </div>
           )}
 
-          {/* ══ ESCALATED PHASE ══ */}
           {phase === "escalated" && (() => {
             const emergencyContacts = userProfile?.emergencyContacts || [];
             const smsUri = buildSmsUri(true);
@@ -783,7 +762,6 @@ export default function EmergencyPage() {
             return (
             <div className="scale-in" style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", textAlign: "center" }}>
 
-              {/* Icon */}
               <div style={{ width: 88, height: 88, borderRadius: 26, background: "rgba(255,59,59,0.10)", border: "1px solid rgba(255,59,59,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, boxShadow: "0 0 40px rgba(255,59,59,0.15)" }}>
                 🚨
               </div>
@@ -798,7 +776,6 @@ export default function EmergencyPage() {
                 </p>
               </div>
 
-              {/* Status list */}
               <div className="mp-card" style={{ width: "100%", padding: "14px 16px", textAlign: "left", display: "flex", flexDirection: "column", gap: 10, borderColor: "rgba(255,59,59,0.18)", background: "rgba(255,59,59,0.04)" }}>
                 {[
                   { icon: "✓", label: "Admin control room alerted", color: "#22d87a", done: true },
@@ -815,10 +792,9 @@ export default function EmergencyPage() {
                 ))}
               </div>
 
-              {/* ── SMS Card ── */}
               {emergencyContacts.length > 0 ? (
                 <div className="mp-card fade-up d3" style={{ width: "100%", padding: "16px", textAlign: "left", borderColor: "rgba(255,59,59,0.22)", background: "rgba(255,59,59,0.05)", display: "flex", flexDirection: "column", gap: 14 }}>
-                  {/* Card header */}
+
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff3b3b, #b91c1c)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0, boxShadow: "0 4px 16px rgba(255,59,59,0.3)" }}>📩</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -827,7 +803,6 @@ export default function EmergencyPage() {
                     </div>
                   </div>
 
-                  {/* Recipients list */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 10, color: "var(--faint)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>Recipients</div>
                     {emergencyContacts.map((c, i) => {
@@ -854,7 +829,6 @@ export default function EmergencyPage() {
                     })}
                   </div>
 
-                  {/* CTA buttons */}
                   <div style={{ display: "flex", gap: 10, width: "100%" }}>
                     {smsUri && (
                       <a
@@ -879,7 +853,6 @@ export default function EmergencyPage() {
                     )}
                   </div>
 
-                  {/* Status indicator */}
                   {smsOpened && (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "6px 0", fontSize: 11, color: "#22d87a", fontWeight: 600 }}>
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22d87a", display: "inline-block" }} />
@@ -888,7 +861,7 @@ export default function EmergencyPage() {
                   )}
                 </div>
               ) : (
-                /* No emergency contacts warning */
+
                 <div className="mp-card fade-up d3" style={{ width: "100%", padding: "14px 16px", textAlign: "left", borderColor: "rgba(255,184,48,0.22)", background: "rgba(255,184,48,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,184,48,0.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>⚠️</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -916,11 +889,9 @@ export default function EmergencyPage() {
             );
           })()}
 
-          {/* ══ SURVEY PHASE ══ */}
           {phase === "survey" && (
             <div className="fade-up" style={{ display: "flex", flexDirection: "column", gap: 22 }}>
 
-              {/* Header */}
               <div style={{ textAlign: "center" }}>
                 <div className="display-text" style={{ fontSize: "clamp(17px, 5vw, 20px)", color: "#3d8bff", marginBottom: 4 }}>
                   Quick Assessment
@@ -928,7 +899,6 @@ export default function EmergencyPage() {
                 <p style={{ fontSize: 12, color: "var(--muted)" }}>Takes 20 seconds · helps responders prepare</p>
               </div>
 
-              {/* ── Injury Level ── */}
               <div>
                 <Label>Injury Level</Label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
@@ -947,7 +917,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* ── Blood Group ── */}
               <div>
                 <Label>Blood Group</Label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 8 }}>
@@ -961,7 +930,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* ── # Patients ── */}
               <div>
                 <Label>Patients Involved</Label>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginTop: 8 }}>
@@ -975,7 +943,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* ── Can Drive + Need Ambulance ── */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
                   <Label>Can Drive?</Label>
@@ -1003,7 +970,6 @@ export default function EmergencyPage() {
                 </div>
               </div>
 
-              {/* ── Description ── */}
               <div>
                 <Label>Description <span style={{ color: "var(--faint)", fontWeight: 400 }}>(optional)</span></Label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)}
@@ -1015,7 +981,6 @@ export default function EmergencyPage() {
                 />
               </div>
 
-              {/* Submit */}
               <button onClick={handleSubmitSurvey} disabled={submitting} className="sweep-btn-blue"
                 style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", color: "white", cursor: "pointer", boxShadow: "0 8px 32px rgba(37,99,235,0.28)", opacity: submitting ? 0.6 : 1, transition: "opacity .18s, transform .12s" }}
                 onMouseDown={e => (e.currentTarget.style.transform = "scale(.99)")}
@@ -1031,7 +996,6 @@ export default function EmergencyPage() {
             </div>
           )}
 
-          {/* ══ DONE PHASE ══ */}
           {phase === "done" && (
             <div className="scale-in" style={{ display: "flex", flexDirection: "column", gap: 18, alignItems: "center", textAlign: "center", paddingTop: 8 }}>
 
@@ -1063,14 +1027,13 @@ export default function EmergencyPage() {
             </div>
           )}
 
-        </div>{/* mp-inner */}
+        </div>
         </div>
       </div>
     </>
   );
 }
 
-/* ── Small helper ── */
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.30)", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 700, fontFamily: "'Space Mono', monospace" }}>

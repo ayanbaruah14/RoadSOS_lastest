@@ -47,10 +47,8 @@ export default function EmergencyPage() {
   const [alertStatus, setAlertStatus] = useState<string>("active");
   const [adminNotification, setAdminNotification] = useState<string | null>(null);
 
-  // Load dynamic profile
   const userProfile = typeof window !== "undefined" ? getUserProfile() : null;
 
-  // Survey state
   const [injuryLevel, setInjuryLevel] = useState("minor");
   const [bloodGroup, setBloodGroup] = useState(userProfile?.bloodGroup || "O+");
   const [numPatients, setNumPatients] = useState(1);
@@ -66,7 +64,6 @@ export default function EmergencyPage() {
   const lastSentRef = useRef<number>(0);
   const [gpsActive, setGpsActive] = useState(false);
 
-  // Update alert in MongoDB
   const updateAlert = useCallback(async (data: Record<string, unknown>) => {
     try {
       await fetch(`/api/sos/alerts/${alertId}`, {
@@ -79,14 +76,13 @@ export default function EmergencyPage() {
     }
   }, [alertId]);
 
-  // Live GPS tracking — stream position to server every 5s
   useEffect(() => {
     if (phase === "done" || !alertId) return;
     if (!navigator.geolocation) return;
 
     const sendLocation = (lat: number, lng: number, speed: number | null, heading: number | null) => {
       const now = Date.now();
-      if (now - lastSentRef.current < 5000) return; // Throttle to every 5s
+      if (now - lastSentRef.current < 5000) return;
       lastSentRef.current = now;
 
       fetch(`/api/sos/alerts/${alertId}/location`, {
@@ -121,7 +117,6 @@ export default function EmergencyPage() {
     };
   }, [alertId, phase]);
 
-  // Poll alert status for admin response notifications
   useEffect(() => {
     if (!alertId || phase === "loading") return;
 
@@ -148,12 +143,10 @@ export default function EmergencyPage() {
     return () => clearInterval(interval);
   }, [alertId, alertStatus, phase]);
 
-  // Find nearest hospital + get route
   useEffect(() => {
     async function findHospital() {
       let hospitals: { name: string; lat: number; lng: number; phone: string; distance: number }[] = [];
 
-      // Try scrape API
       try {
         const res = await fetch(`/api/services/scrape?lat=${userLat}&lng=${userLng}&radius=10000`);
         if (res.ok) {
@@ -169,7 +162,6 @@ export default function EmergencyPage() {
         }
       } catch { /* ignore */ }
 
-      // Try nearby API
       if (hospitals.length === 0) {
         try {
           const res = await fetch(`/api/services/nearby?lat=${userLat}&lng=${userLng}&radius=15&type=hospital`);
@@ -186,7 +178,6 @@ export default function EmergencyPage() {
         } catch { /* ignore */ }
       }
 
-      // Offline fallback — use pre-cached hospital data
       if (hospitals.length === 0) {
         const cached = loadEmergencyCache();
         if (cached) {
@@ -202,7 +193,6 @@ export default function EmergencyPage() {
           setHospital(info);
           setRoutePoints(cached.routePoints);
 
-          // Try to save to alert (will fail silently if offline)
           updateAlert({
             nearestHospital: { name: info.name, distance: info.distance, eta: info.eta, lat: info.lat, lng: info.lng },
           }).catch(() => {});
@@ -211,7 +201,6 @@ export default function EmergencyPage() {
           return;
         }
 
-        // Last resort hardcoded fallback
         hospitals = [{
           name: "Nearest Hospital",
           lat: userLat + 0.008,
@@ -223,7 +212,6 @@ export default function EmergencyPage() {
 
       const closest = hospitals[0];
 
-      // Get OSRM route
       let eta = Math.round(closest.distance * 3);
       let geometry: [number, number][] = [];
       try {
@@ -243,7 +231,6 @@ export default function EmergencyPage() {
       setHospital(info);
       setRoutePoints(geometry);
 
-      // Save nearest hospital to alert
       await updateAlert({
         nearestHospital: { name: info.name, distance: info.distance, eta: info.eta, lat: info.lat, lng: info.lng },
       });
@@ -254,7 +241,6 @@ export default function EmergencyPage() {
     findHospital();
   }, [userLat, userLng, updateAlert]);
 
-  // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     if (!hospital) return;
@@ -270,7 +256,6 @@ export default function EmergencyPage() {
       subdomains: "abcd", maxZoom: 19,
     }).addTo(map);
 
-    // User marker
     const userIcon = L.divIcon({
       className: "",
       html: `<div style="width:18px;height:18px;background:radial-gradient(circle,#3b82f6,#1d4ed8);border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px rgba(59,130,246,0.6);"></div>`,
@@ -278,7 +263,6 @@ export default function EmergencyPage() {
     });
     L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
 
-    // Hospital marker
     const hospIcon = L.divIcon({
       className: "",
       html: `<div style="width:40px;height:40px;background:linear-gradient(135deg,#dc2626,#991b1b);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(220,38,38,0.5);border:2px solid rgba(255,255,255,0.3);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2v20M2 12h20"/></svg></div>`,
@@ -286,12 +270,10 @@ export default function EmergencyPage() {
     });
     L.marker([hospital.lat, hospital.lng], { icon: hospIcon }).addTo(map);
 
-    // Route polyline
     if (routePoints.length > 0) {
       L.polyline(routePoints, { color: "#3b82f6", weight: 5, opacity: 0.8, dashArray: "10, 6" }).addTo(map);
     }
 
-    // Fit bounds
     const bounds = L.latLngBounds([
       [userLat, userLng],
       [hospital.lat, hospital.lng],
@@ -299,11 +281,10 @@ export default function EmergencyPage() {
     map.fitBounds(bounds, { padding: [50, 50] });
 
     mapRef.current = map;
-    })(); // end async IIFE
+    })();
     return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
   }, [hospital, routePoints, userLat, userLng]);
 
-  // Timer countdown
   useEffect(() => {
     if (phase !== "timer") return;
 
@@ -312,7 +293,7 @@ export default function EmergencyPage() {
         if (prev <= 1) {
           clearInterval(timerRef.current!);
           timerRef.current = null;
-          // Escalate to critical
+
           setPhase("escalated");
           updateAlert({
             canSelfReach: false,
@@ -330,14 +311,12 @@ export default function EmergencyPage() {
     };
   }, [phase, updateAlert]);
 
-  // User pressed "ABLE TO REACH"
   const handleCanReach = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setPhase("survey");
     updateAlert({ canSelfReach: true, severity: "high" });
   };
 
-  // Submit survey
   const handleSubmitSurvey = async () => {
     setSubmitting(true);
     await updateAlert({
@@ -355,7 +334,6 @@ export default function EmergencyPage() {
     setSubmitting(false);
   };
 
-  // Cancel escalation
   const handleFalseAlarm = async () => {
     await updateAlert({
       canSelfReach: true,
@@ -370,7 +348,7 @@ export default function EmergencyPage() {
 
   return (
     <div className="h-full w-full flex flex-col bg-[#06060c] overflow-auto">
-      {/* Emergency header */}
+
       <div className="shrink-0 px-4 pt-4 pb-3 border-b border-white/[0.06]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -400,7 +378,6 @@ export default function EmergencyPage() {
         </div>
       </div>
 
-      {/* Admin Response Notification */}
       {adminNotification === "responding" && (
         <div className="shrink-0 mx-4 mb-2 animate-fade-in-up">
           <div className="bg-emerald-500/15 border border-emerald-500/25 rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -443,7 +420,7 @@ export default function EmergencyPage() {
           </div>
         </div>
       )}
-      {/* Map */}
+
       <div className="shrink-0 h-[35vh] relative">
         {phase === "loading" && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#06060c]">
@@ -456,7 +433,6 @@ export default function EmergencyPage() {
         <div ref={mapContainerRef} className="w-full h-full" />
       </div>
 
-      {/* Hospital info */}
       {hospital && (
         <div className="shrink-0 mx-4 -mt-6 relative z-10">
           <div className="glass-card p-3.5 border-blue-500/20 animate-fade-in-up">
@@ -478,12 +454,11 @@ export default function EmergencyPage() {
         </div>
       )}
 
-      {/* Phase content */}
       <div className="flex-1 px-4 pt-4 pb-8">
-        {/* TIMER PHASE */}
+
         {phase === "timer" && (
           <div className="animate-fade-in-up space-y-5">
-            {/* Timer display */}
+
             <div className="text-center">
               <div className="relative w-32 h-32 mx-auto mb-3">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -503,7 +478,6 @@ export default function EmergencyPage() {
               <p className="text-xs text-white/40">seconds remaining</p>
             </div>
 
-            {/* Message */}
             <div className="glass-card p-4 border-amber-500/20 bg-amber-500/[0.05] text-center">
               <p className="text-sm text-amber-400 font-semibold mb-1">Can you reach the hospital yourself?</p>
               <p className="text-[11px] text-white/40 leading-relaxed">
@@ -511,7 +485,6 @@ export default function EmergencyPage() {
               </p>
             </div>
 
-            {/* Reach button */}
             <button
               onClick={handleCanReach}
               className="w-full py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-white text-base font-bold rounded-2xl shadow-xl shadow-emerald-600/30 hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer animate-gradient-shift"
@@ -526,7 +499,6 @@ export default function EmergencyPage() {
           </div>
         )}
 
-        {/* ESCALATED PHASE */}
         {phase === "escalated" && (
           <div className="animate-scale-in space-y-5 text-center">
             <div className="w-24 h-24 mx-auto rounded-3xl bg-red-500/15 border border-red-500/30 flex items-center justify-center animate-border-glow">
@@ -567,7 +539,6 @@ export default function EmergencyPage() {
           </div>
         )}
 
-        {/* SURVEY PHASE */}
         {phase === "survey" && (
           <div className="animate-fade-in-up space-y-4">
             <div className="text-center mb-2">
@@ -577,7 +548,6 @@ export default function EmergencyPage() {
               <p className="text-[11px] text-white/40">Help us understand your situation (optional but recommended)</p>
             </div>
 
-            {/* Injury Level */}
             <div>
               <label className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2 block">Injury Level</label>
               <div className="grid grid-cols-4 gap-2">
@@ -598,7 +568,6 @@ export default function EmergencyPage() {
               </div>
             </div>
 
-            {/* Blood Group */}
             <div>
               <label className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2 block">Blood Group</label>
               <div className="grid grid-cols-4 gap-2">
@@ -614,7 +583,6 @@ export default function EmergencyPage() {
               </div>
             </div>
 
-            {/* Number of patients */}
             <div>
               <label className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2 block">Number of Patients</label>
               <div className="grid grid-cols-5 gap-2">
@@ -630,7 +598,6 @@ export default function EmergencyPage() {
               </div>
             </div>
 
-            {/* Can Drive + Need Ambulance */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2 block">Can Drive?</label>
@@ -666,7 +633,6 @@ export default function EmergencyPage() {
               </div>
             </div>
 
-            {/* Description */}
             <div>
               <label className="text-[10px] text-white/30 uppercase tracking-wider font-semibold mb-2 block">Brief Description (optional)</label>
               <textarea
@@ -678,7 +644,6 @@ export default function EmergencyPage() {
               />
             </div>
 
-            {/* Submit */}
             <button
               onClick={handleSubmitSurvey}
               disabled={submitting}
@@ -697,7 +662,6 @@ export default function EmergencyPage() {
           </div>
         )}
 
-        {/* DONE PHASE */}
         {phase === "done" && (
           <div className="animate-fade-in-up space-y-5 text-center pt-4">
             <div className="w-20 h-20 mx-auto rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">

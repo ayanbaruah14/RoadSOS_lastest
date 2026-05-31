@@ -9,7 +9,6 @@ const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 const VEHICLE_TYPES = ["Sedan", "SUV", "Hatchback", "Motorcycle", "Truck", "Van", "Auto", "Other"];
 const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
 
-/* ─── Global styles ─── */
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
@@ -215,7 +214,6 @@ const STYLES = `
   .sm-input:focus { border-color: rgba(61,139,255,0.35); }
 `;
 
-/* ─── InputField ─── */
 function InputField({ label, icon, value, onChange, placeholder, type = "text", accent = "blue" }: {
   label: string; icon: React.ReactNode; value: string; onChange: (v: string) => void;
   placeholder: string; type?: string; accent?: string;
@@ -235,7 +233,6 @@ function InputField({ label, icon, value, onChange, placeholder, type = "text", 
   );
 }
 
-/* ─── Icon SVGs ─── */
 const Icon = {
   user: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   phone: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
@@ -302,18 +299,15 @@ export default function ProfilePage() {
     <>
       <style>{STYLES}</style>
 
-      {/* Ambient top glow */}
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: 500, height: 260, background: "radial-gradient(ellipse at 50% 0%, rgba(61,139,255,0.07) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ minHeight: "100dvh", background: "var(--bg)", position: "relative", overflowX: "hidden" }}>
         <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px 120px", position: "relative", zIndex: 1 }}>
 
-{/* ─── HEADER ─── */}
 <div className="fade-up" style={{ paddingTop: 32, paddingBottom: 28 }}>
-  
-  {/* Top row: back button left, avatar centered */}
+
 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, height: 76 }}>
-  
+
   <Link href="/user" style={{ position: "absolute", left: 0, top: 0, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--muted)", textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--s1)", transition: "all .18s" }}>
     {Icon.back} Back to Map
   </Link>
@@ -337,7 +331,6 @@ export default function ProfilePage() {
 
 </div>
 
-          {/* ─── TABS ─── */}
           <div className="fade-up d1" style={{ display: "flex", gap: 6, marginBottom: 24, overflowX: "auto", paddingBottom: 2, flexWrap: "nowrap", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveSection(t.id)} className={`tab ${activeSection === t.id ? "active" : ""}`}>
@@ -347,10 +340,9 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* ══ PERSONAL ══ */}
           {activeSection === "personal" && (
             <div className="fade-up d2 pc" style={{ padding: "24px 20px" }}>
-              {/* Section header */}
+
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
                 <div className="sicon-blue" style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span className="sicon-inner">👤</span></div>
                 <div>
@@ -368,7 +360,6 @@ export default function ProfilePage() {
                 <InputField label="Age" icon={Icon.age} value={profile.age} onChange={v => update("age", v)} placeholder="e.g. 28" accent="blue" />
               </div>
 
-              {/* Gender */}
               <div style={{ marginBottom: 20 }}>
                 <span className="slabel">Gender</span>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -378,7 +369,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Blood Group */}
               <div>
                 <span className="slabel">Blood Group</span>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
@@ -390,7 +380,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ══ VEHICLE ══ */}
           {activeSection === "vehicle" && (
             <div className="fade-up d2 pc" style={{ padding: "24px 20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
@@ -423,10 +412,9 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ══ MEDICAL ══ */}
           {activeSection === "medical" && (
             <div className="fade-up d2" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Conditions */}
+
               <div className="pc" style={{ padding: "22px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
                   <div className="sicon-red" style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span className="sicon-inner">💊</span></div>
@@ -437,7 +425,6 @@ export default function ProfilePage() {
                 </div>
                 <div className="divider" style={{ marginBottom: 16 }} />
 
-                {/* Tags */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, minHeight: 36, marginBottom: 14 }}>
                   {profile.medicalConditions.length === 0 && (
                     <span style={{ fontSize: 12, color: "var(--faint)", fontStyle: "italic" }}>No conditions added yet</span>
@@ -451,14 +438,12 @@ export default function ProfilePage() {
                   ))}
                 </div>
 
-                {/* Add row */}
                 <div style={{ display: "flex", gap: 8 }}>
                   <input className="sm-input" style={{ flex: 1 }} value={newMedical} onChange={e => setNewMedical(e.target.value)} onKeyDown={e => e.key === "Enter" && addMedical()} placeholder="e.g. Diabetes, Asthma…" />
                   <button onClick={addMedical} style={{ padding: "9px 16px", borderRadius: 10, background: "rgba(255,77,77,0.10)", border: "1px solid rgba(255,77,77,0.20)", color: "#ff7070", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", transition: "all .18s" }}>+ Add</button>
                 </div>
               </div>
 
-              {/* Allergies */}
               <div className="pc" style={{ padding: "22px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
                   <div className="sicon-amber" style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span className="sicon-inner">⚠️</span></div>
@@ -490,10 +475,9 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ══ EMERGENCY CONTACTS ══ */}
           {activeSection === "emergency" && (
             <div className="fade-up d2 pc" style={{ padding: "22px 20px" }}>
-              {/* Header row */}
+
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div className="sicon-green" style={{ width: 32, height: 32, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span className="sicon-inner">📱</span></div>
@@ -509,7 +493,6 @@ export default function ProfilePage() {
               </div>
               <div className="divider" style={{ marginBottom: 16 }} />
 
-              {/* Contact list */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: addingContact ? 16 : 0 }}>
                 {profile.emergencyContacts.length === 0 && !addingContact && (
                   <div style={{ textAlign: "center", padding: "32px 0", color: "var(--faint)" }}>
@@ -520,7 +503,7 @@ export default function ProfilePage() {
                 {profile.emergencyContacts.map((ec, i) => (
                   <div key={i} className="contact-row">
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      {/* Avatar */}
+
                       <div style={{ width: 38, height: 38, borderRadius: 11, background: "rgba(34,216,122,0.10)", border: "1px solid rgba(34,216,122,0.20)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans',sans-serif", fontWeight: 800, fontSize: 15, color: "#22d87a", flexShrink: 0 }}>
                         {ec.name.charAt(0).toUpperCase()}
                       </div>
@@ -544,7 +527,6 @@ export default function ProfilePage() {
                 ))}
               </div>
 
-              {/* Add contact form */}
               {addingContact && (
                 <div style={{ background: "rgba(61,139,255,0.04)", border: "1px solid rgba(61,139,255,0.14)", borderRadius: 14, padding: "16px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "var(--blue)", fontFamily: "'Space Mono', monospace", marginBottom: 12 }}>NEW CONTACT</div>
@@ -564,7 +546,6 @@ export default function ProfilePage() {
 
         </div>
 
-        {/* ─── STICKY SAVE ─── */}
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 20 }}>
           <div style={{ maxWidth: 520, margin: "0 auto", padding: "12px 16px 24px", background: "linear-gradient(to top, #080810 60%, transparent)" }}>
             <button onClick={handleSave} className={saved ? "cta-green" : "cta-blue"}

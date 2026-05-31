@@ -22,13 +22,12 @@ export function verifyToken(token: string): JWTPayload | null {
 }
 
 export function getTokenFromRequest(req: NextRequest): string | null {
-  // Check Authorization header
+
   const authHeader = req.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
     return authHeader.slice(7);
   }
 
-  // Check cookies
   const cookieToken = req.cookies.get("token")?.value;
   if (cookieToken) return cookieToken;
 

@@ -549,7 +549,7 @@ export default function SignupPage() {
         <div className="rsos-grid" />
 
         <div className="rsos-wrap">
-          {/* Logo */}
+
           <Link href="/" className="rsos-logo-wrap">
             <div className="rsos-logo-badge">SOS</div>
             <div className="rsos-logo-text">
@@ -558,7 +558,6 @@ export default function SignupPage() {
             </div>
           </Link>
 
-          {/* Steps */}
           <div className="rsos-steps">
             {[1, 2, 3].map((s) => (
               <div key={s} className="rsos-step-item">
@@ -573,7 +572,6 @@ export default function SignupPage() {
           </div>
           <p className="rsos-step-label">{stepLabels[step - 1]}</p>
 
-          {/* Card */}
           <div className="rsos-card">
             <div className="rsos-card-glow" />
 
@@ -591,7 +589,6 @@ export default function SignupPage() {
 
             <form onSubmit={handleSubmit}>
 
-              {/* Step 1 */}
               {step === 1 && (
                 <div className="rsos-step-content rsos-space-4">
                   <p className="rsos-label" style={{ marginBottom: 4 }}>Select your role</p>
@@ -625,7 +622,6 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {/* Step 2 */}
               {step === 2 && (
                 <div className="rsos-step-content rsos-space-4">
                   <InputField label="Full Name" icon={userIcon} value={form.name} onChange={(v) => update("name", v)} placeholder="John Doe" required autoComplete="name" />
@@ -659,7 +655,6 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {/* Step 3 */}
               {step === 3 && (
                 <div className="rsos-step-content">
                   {form.role === "user" && (

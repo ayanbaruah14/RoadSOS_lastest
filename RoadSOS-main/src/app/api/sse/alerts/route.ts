@@ -1,17 +1,15 @@
 import { alertEmitter, ALERT_EVENTS } from "@/lib/events";
 
-// GET /api/sse/alerts — Server-Sent Events stream for real-time alerts
 export async function GET() {
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial connection event
+
       controller.enqueue(
         encoder.encode(`data: ${JSON.stringify({ type: "connected", timestamp: Date.now() })}\n\n`)
       );
 
-      // Send heartbeat every 15s to keep connection alive
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(
@@ -22,7 +20,6 @@ export async function GET() {
         }
       }, 15000);
 
-      // Listen to all alert events
       const handlers: Record<string, (data: unknown) => void> = {};
 
       Object.values(ALERT_EVENTS).forEach((eventName) => {
@@ -32,7 +29,7 @@ export async function GET() {
               encoder.encode(`data: ${JSON.stringify({ type: eventName, data, timestamp: Date.now() })}\n\n`)
             );
           } catch {
-            // Client disconnected
+
             cleanup();
           }
         };
@@ -40,7 +37,6 @@ export async function GET() {
         alertEmitter.on(eventName, handler);
       });
 
-      // Cleanup on close
       const cleanup = () => {
         clearInterval(heartbeat);
         Object.entries(handlers).forEach(([event, handler]) => {
@@ -48,13 +44,12 @@ export async function GET() {
         });
       };
 
-      // Handle client disconnect via abort signal
       const abortHandler = () => cleanup();
       if (typeof controller.close === "function") {
-        // Fallback: set a timeout to check if stream is still alive
+
         const checkAlive = setInterval(() => {
           try {
-            controller.enqueue(encoder.encode(":\n\n")); // SSE comment as ping
+            controller.enqueue(encoder.encode(":\n\n"));
           } catch {
             clearInterval(checkAlive);
             cleanup();
@@ -62,7 +57,6 @@ export async function GET() {
         }, 30000);
       }
 
-      // Return cleanup for when the request is aborted
       return abortHandler;
     },
   });
@@ -77,5 +71,4 @@ export async function GET() {
   });
 }
 
-// Force dynamic
 export const dynamic = "force-dynamic";

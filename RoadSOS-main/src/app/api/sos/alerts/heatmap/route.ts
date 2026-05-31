@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db/connection";
 import SOSAlert from "@/lib/db/models/SOSAlert";
 
-// GET /api/sos/alerts/heatmap — Fetch alert locations + metadata for heatmap
 export async function GET() {
   try {
     await connectDB();
@@ -14,7 +13,7 @@ export async function GET() {
 
     const points = alerts.map((alert) => {
       const coords = alert.location?.coordinates || [0, 0];
-      // Weight: critical=1.0, high=0.7, medium=0.5, low=0.3
+
       const severityWeight: Record<string, number> = {
         critical: 1.0,
         high: 0.7,
@@ -34,7 +33,6 @@ export async function GET() {
       };
     });
 
-    // Stats
     const stats = {
       total: alerts.length,
       critical: alerts.filter((a) => a.severity === "critical").length,

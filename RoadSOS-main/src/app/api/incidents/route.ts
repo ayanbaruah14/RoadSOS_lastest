@@ -3,7 +3,6 @@ import connectDB from "@/lib/db/connection";
 import Incident from "@/lib/db/models/Incident";
 import { getUserFromRequest } from "@/lib/auth";
 
-// POST /api/incidents — Create a new incident report
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -51,7 +50,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/incidents — List active incidents (optionally near a location)
 export async function GET(req: NextRequest) {
   try {
     await connectDB();

@@ -333,7 +333,7 @@ export default function LoginPage() {
         <div className="rl-grid" />
 
         <div className="rl-wrap">
-          {/* Logo */}
+
           <Link href="/" className="rl-logo">
             <div className="rl-logo-badge">SOS</div>
             <div className="rl-logo-text">
@@ -342,7 +342,6 @@ export default function LoginPage() {
             </div>
           </Link>
 
-          {/* Card */}
           <div className="rl-card">
             <div className="rl-card-glow" />
             <div className="rl-accent-tl" />
@@ -364,7 +363,7 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="rl-form">
-              {/* Email */}
+
               <div className="rl-field">
                 <label className="rl-label">Email Address</label>
                 <div className="rl-input-wrap">
@@ -380,7 +379,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Password */}
               <div className="rl-field">
                 <div className="rl-pw-row">
                   <label className="rl-label">Password</label>

@@ -462,7 +462,6 @@ export default function ChatbotPanel() {
         }
       `}</style>
 
-      {/* ── FAB ── */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`rca-fab ${isEmergency ? "rca-fab--em" : ""} ${isOpen ? "rca-fab--open" : ""}`}
@@ -474,13 +473,10 @@ export default function ChatbotPanel() {
         </svg>
       </button>
 
-      {/* ── WINDOW ── */}
       <div className={`rca-window ${isOpen ? "rca-window--open" : "rca-window--closed"} ${isEmergency ? "rca-window--em" : ""}`}>
 
-        {/* Emergency stripe */}
         {isEmergency && <div className="rca-em-stripe" />}
 
-        {/* Header */}
         <div className="rca-header">
           <div className="rca-header-left">
             <div className="rca-avatar-wrap">
@@ -505,7 +501,6 @@ export default function ChatbotPanel() {
           </div>
         </div>
 
-        {/* Messages */}
         <div className="rca-msgs">
           {messages.map((message) => (
             <article key={message.id} className={`rca-msg ${message.sender === "user" ? "rca-msg--user" : ""}`}>
@@ -528,17 +523,14 @@ export default function ChatbotPanel() {
           <div ref={messagesEndRef} style={{ height: 4 }} />
         </div>
 
-        {/* Scroll fade */}
         <div className="rca-fade" />
 
-        {/* Quick chips */}
         <div className="rca-chips">
           {quickChips.map((chip) => (
             <QuickChip key={chip} label={chip} isEmergency={isEmergency} onClick={() => handleChipClick(chip)} />
           ))}
         </div>
 
-        {/* Input */}
         <div className="rca-input-wrap">
           <form onSubmit={handleSubmit}>
             <div className={`rca-input-row ${isEmergency ? "rca-input-row--em" : ""}`}>
@@ -574,7 +566,6 @@ export default function ChatbotPanel() {
           </form>
         </div>
 
-        {/* Footer */}
         <div className="rca-footer">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

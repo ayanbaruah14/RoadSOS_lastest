@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db/connection";
 import SOSAlert from "@/lib/db/models/SOSAlert";
 
-// GET /api/sos/alerts — Fetch all SOS alerts for admin dashboard
 export async function GET(req: NextRequest) {
   try {
     await connectDB();

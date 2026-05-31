@@ -440,7 +440,6 @@ export default function UserPage() {
           onRouteRequest={fetchRoute}
         />
 
-        {/* ── HEADER ── */}
         <div className="up-header">
           <div className="up-row1">
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -510,7 +509,6 @@ export default function UserPage() {
           onClose={() => setTrafficOpen(false)}
         />
 
-{/* ── ROUTE PANEL ── */}
 {routeData && (
   <div
     style={{
@@ -570,7 +568,6 @@ export default function UserPage() {
   </div>
 )}
 
-{/* Route fetching toast */}
 {routeLoading && !routeData && (
   <div style={{ position: "absolute", bottom: 136, left: 12, right: 12, zIndex: 1000 }}>
     <div className="up-route-loading">
@@ -580,8 +577,6 @@ export default function UserPage() {
   </div>
 )}
 
-        {/* ── SOS AREA ── */}
-        {/* ── SOS AREA ── */}
 <div className="up-sos-area" style={{ bottom: 32 }}>
           <SOSButton
             userProfile={userProfile || getUserProfile()}
@@ -615,7 +610,6 @@ export default function UserPage() {
           )}
         </div>
 
-        {/* ── SIDEBAR ── */}
         <div className={`up-sidebar ${sidebarOpen ? "open" : "closed"}`}>
           <div className="up-sidebar-in">
             <div className="up-sb-head">

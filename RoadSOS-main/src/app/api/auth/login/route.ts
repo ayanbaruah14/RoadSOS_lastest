@@ -3,7 +3,6 @@ import connectDB from "@/lib/db/connection";
 import User from "@/lib/db/models/User";
 import { signToken } from "@/lib/auth";
 
-// POST /api/auth/login
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -18,7 +17,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find user with password field
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
     if (!user) {
       return NextResponse.json(
@@ -27,7 +25,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return NextResponse.json(
@@ -36,7 +33,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate token
     const token = signToken({
       userId: user._id.toString(),
       email: user.email,

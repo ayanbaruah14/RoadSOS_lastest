@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const OVERPASS_API = "https://overpass-api.de/api/interpreter";
 
-// Map OSM tags to our service types
 interface OSMElement {
   type: string;
   id: number;
@@ -30,7 +29,7 @@ function classifyService(tags: Record<string, string>): string | null {
   if (tags.amenity === "police") return "police";
   if (tags.amenity === "police_station") return "police";
   if (tags.emergency === "ambulance_station") return "ambulance";
-  if (tags.amenity === "fire_station") return "ambulance"; // fire stations often have ambulance
+  if (tags.amenity === "fire_station") return "ambulance";
   if (tags.shop === "car_repair" || tags.craft === "car_repair") return "repair";
   if (tags.shop === "car" || tags.shop === "motorcycle") return "showroom";
   if (tags.shop === "tyres" || tags.shop === "tires") return "repair";
@@ -43,7 +42,7 @@ function extractPhone(tags: Record<string, string>): string[] {
   if (tags.phone) phones.push(tags.phone);
   if (tags["contact:phone"]) phones.push(tags["contact:phone"]);
   if (tags["contact:mobile"]) phones.push(tags["contact:mobile"]);
-  // Deduplicate
+
   return [...new Set(phones)];
 }
 
@@ -65,23 +64,20 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// GET /api/services/scrape?lat=28.6&lng=77.2&radius=5000&type=all
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const lat = parseFloat(searchParams.get("lat") || "0");
     const lng = parseFloat(searchParams.get("lng") || "0");
-    const radius = parseInt(searchParams.get("radius") || "5000"); // meters
+    const radius = parseInt(searchParams.get("radius") || "5000");
     const typeFilter = searchParams.get("type") || "all";
 
     if (!lat || !lng) {
       return NextResponse.json({ error: "lat and lng are required" }, { status: 400 });
     }
 
-    // Cap radius at 15km to avoid Overpass timeouts
     const safeRadius = Math.min(radius, 15000);
 
-    // Build Overpass query — remove extra whitespace
     const query = `[out:json][timeout:30];(nwr["amenity"="hospital"](around:${safeRadius},${lat},${lng});nwr["healthcare"="hospital"](around:${safeRadius},${lat},${lng});nwr["amenity"="police"](around:${safeRadius},${lat},${lng});nwr["emergency"="ambulance_station"](around:${safeRadius},${lat},${lng});nwr["amenity"="fire_station"](around:${safeRadius},${lat},${lng});nwr["shop"="car_repair"](around:${safeRadius},${lat},${lng});nwr["craft"="car_repair"](around:${safeRadius},${lat},${lng});nwr["shop"="tyres"](around:${safeRadius},${lat},${lng});nwr["shop"="car"](around:${safeRadius},${lat},${lng}););out center tags;`;
 
     const url = `${OVERPASS_API}?data=${encodeURIComponent(query)}`;
@@ -100,15 +96,13 @@ export async function GET(req: NextRequest) {
     const data = await response.json();
     const elements: OSMElement[] = data.elements || [];
 
-    // Normalize OSM data into our service format
     const services: NormalizedService[] = [];
 
     for (const el of elements) {
       const tags = el.tags || {};
       const name = tags.name || tags["name:en"] || "";
-      if (!name) continue; // Skip unnamed POIs
+      if (!name) continue;
 
-      // Only show general hospitals, not any pharmacy/chemist/drugstore/dispensary types
       const nameLower = name.toLowerCase();
       if (
         nameLower.includes("pharmacy") ||
@@ -150,14 +144,12 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Sort by distance
     services.sort((a, b) => {
       const distA = haversineDistance(lat, lng, a.lat, a.lng);
       const distB = haversineDistance(lat, lng, b.lat, b.lng);
       return distA - distB;
     });
 
-    // Format for frontend compatibility
     const formatted = services.map((s) => ({
       _id: `osm-${s.osmId}`,
       name: s.name,

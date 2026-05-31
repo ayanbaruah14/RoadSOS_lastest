@@ -13,7 +13,7 @@ export interface IEmergencyService extends Document {
   type: ServiceType;
   location: {
     type: "Point";
-    coordinates: [number, number]; // [lng, lat]
+    coordinates: [number, number];
   };
   address: string;
   phone: string[];
@@ -89,10 +89,8 @@ const emergencyServiceSchema = new Schema<IEmergencyService>(
   { timestamps: true }
 );
 
-// 2dsphere index for geospatial queries
 emergencyServiceSchema.index({ location: "2dsphere" });
 
-// Compound index for type + location queries
 emergencyServiceSchema.index({ type: 1, location: "2dsphere" });
 
 const EmergencyService: Model<IEmergencyService> =

@@ -1045,7 +1045,7 @@ export default function AdminPage() {
       `}</style>
 
       <div className="mp-page">
-        {/* ── HEADER ── */}
+
         <header className="mp-header">
           <div className="mp-header-left">
             <Link href="/" className="mp-back-btn">
@@ -1087,10 +1087,8 @@ export default function AdminPage() {
           </div>
         </header>
 
-        {/* ── CONTENT ── */}
         <div className="mp-content">
 
-          {/* Flash */}
           {newAlertFlash && (
             <div className="mp-flash">
               <span style={{ fontSize: 16 }}>🚨</span>
@@ -1099,7 +1097,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Stats */}
           <div className="mp-stats anim-fade-up">
             {statCards.map((s) => (
               <div
@@ -1119,7 +1116,6 @@ export default function AdminPage() {
             ))}
           </div>
 
-          {/* Toolbar */}
           <div className="mp-toolbar anim-fade-up" style={{ animationDelay: "0.05s" }}>
             <div className="mp-search">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--accent-cyan)", flexShrink: 0 }}>
@@ -1153,7 +1149,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Meta */}
           {latestAlert && (
             <div className="mp-meta">
               <span className="mp-meta-badge cyan">
@@ -1165,7 +1160,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* List */}
           <div className="mp-alert-list">
             {loading && alerts.length === 0 && (
               <div className="mp-loading">
@@ -1210,7 +1204,7 @@ export default function AdminPage() {
                   className={`mp-alert status-${alert.status} anim-fade-up`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {/* Header row */}
+
                   <div className="mp-alert-head" onClick={() => setExpandedId(isExpanded ? null : alert._id)}>
                     <div className="mp-alert-top">
                       <div className="mp-alert-identity">
@@ -1246,7 +1240,6 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Chips */}
                     <div className="mp-chips">
                       <span className="mp-chip">
                         <span className="mp-chip-icon">🩸</span>
@@ -1282,11 +1275,9 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Expanded */}
                   {isExpanded && (
                     <div className="mp-expand">
 
-                      {/* Escalation */}
                       {alert.escalatedToCritical && (
                         <div className="mp-escalation">
                           <span style={{ fontSize: 18, flexShrink: 0 }}>🚨</span>
@@ -1299,7 +1290,6 @@ export default function AdminPage() {
                         </div>
                       )}
 
-                      {/* Location + Timeline */}
                       <div className="mp-location-row">
                         <div>
                           <div className="mp-row-label">📍 Exact Location</div>
@@ -1327,10 +1317,8 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Detail grid */}
                       <div className="mp-detail-grid">
 
-                        {/* Live GPS */}
                         {alert.liveLocation && alert.status !== "resolved" && (
                           <div className="mp-detail-card span2" style={{ borderColor: "rgba(52,211,153,0.15)", background: "rgba(52,211,153,0.03)" }}>
                             <div className="mp-gps-head">
@@ -1374,7 +1362,6 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        {/* GPS Ended */}
                         {alert.liveLocation && alert.status === "resolved" && (
                           <div className="mp-detail-card span2">
                             <div className="mp-section-label">📡 GPS Tracking (Ended)</div>
@@ -1385,7 +1372,6 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        {/* Survey */}
                         {alert.survey && (
                           <div className="mp-detail-card span2" style={{ borderColor: "rgba(34,211,238,0.12)", background: "rgba(34,211,238,0.02)" }}>
                             <div className="mp-section-label">📋 Injury Assessment</div>
@@ -1417,7 +1403,6 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        {/* User Profile */}
                         <div className="mp-detail-card">
                           <div className="mp-section-label">👤 User Profile</div>
                           <div className="mp-data-row">
@@ -1442,7 +1427,6 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {/* Emergency Contacts */}
                         <div className="mp-detail-card">
                           <div className="mp-section-label">📱 Emergency Contacts</div>
                           {alert.user.emergencyContacts.length > 0 ? (
@@ -1466,7 +1450,6 @@ export default function AdminPage() {
                           )}
                         </div>
 
-                        {/* Nearest Hospital */}
                         {alert.nearestHospital && (
                           <div className="mp-detail-card">
                             <div className="mp-section-label">🏥 Nearest Hospital</div>
@@ -1488,7 +1471,6 @@ export default function AdminPage() {
                         )}
                       </div>
 
-                      {/* Actions */}
                       <div className="mp-actions">
                         {alert.status === "active" && (
                           <button

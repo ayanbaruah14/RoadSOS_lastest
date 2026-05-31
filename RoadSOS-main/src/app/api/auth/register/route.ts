@@ -3,7 +3,6 @@ import connectDB from "@/lib/db/connection";
 import User from "@/lib/db/models/User";
 import { signToken } from "@/lib/auth";
 
-// POST /api/auth/register
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -37,7 +36,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user exists
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       return NextResponse.json(
@@ -46,7 +44,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create user
     const user = await User.create({
       name,
       email: email.toLowerCase(),
@@ -61,7 +58,6 @@ export async function POST(req: NextRequest) {
       emergencyContacts: emergencyContacts || [],
     });
 
-    // Generate token
     const token = signToken({
       userId: user._id.toString(),
       email: user.email,
@@ -89,7 +85,6 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
 
-    // Set cookie
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

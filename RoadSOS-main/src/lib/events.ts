@@ -1,6 +1,3 @@
-// Global event emitter for real-time alert broadcasting
-// Uses a global singleton to survive Next.js hot-reloads
-
 import { EventEmitter } from "events";
 
 const globalForEvents = globalThis as unknown as { alertEmitter: EventEmitter };
@@ -12,7 +9,6 @@ if (!globalForEvents.alertEmitter) {
 
 export const alertEmitter = globalForEvents.alertEmitter;
 
-// Event types
 export const ALERT_EVENTS = {
   NEW_ALERT: "new_alert",
   ALERT_UPDATED: "alert_updated",

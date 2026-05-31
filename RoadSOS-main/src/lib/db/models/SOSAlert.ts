@@ -19,7 +19,6 @@ export interface ISOSAlert extends Document {
   status: "active" | "responding" | "resolved";
   description: string;
 
-  // Emergency page fields
   canSelfReach: boolean | null;
   escalatedToCritical: boolean;
   nearestHospital?: {
@@ -38,7 +37,6 @@ export interface ISOSAlert extends Document {
     description: string;
   };
 
-  // Live GPS tracking
   liveLocation?: {
     lat: number;
     lng: number;

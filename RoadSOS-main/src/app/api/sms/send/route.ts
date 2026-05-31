@@ -6,7 +6,6 @@ import {
   sendResolvedSMS,
 } from "@/lib/sms";
 
-// POST /api/sms/send — Send SMS notifications
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

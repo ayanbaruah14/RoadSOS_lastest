@@ -3,7 +3,6 @@ import connectDB from "@/lib/db/connection";
 import SOSAlert from "@/lib/db/models/SOSAlert";
 import { alertEmitter, ALERT_EVENTS } from "@/lib/events";
 
-// PATCH /api/sos/alerts/[id]/location — Update live GPS location
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +36,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Alert not found" }, { status: 404 });
     }
 
-    // Emit SSE event for real-time tracking
     alertEmitter.emit(ALERT_EVENTS.ALERT_UPDATED, {
       alertId: id,
       type: "location_update",
